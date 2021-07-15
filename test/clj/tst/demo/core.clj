@@ -8,22 +8,22 @@
 )
 
 (def dbconn
-  (db/connect (URI. "bolt://localhost:7687")  ; uri
-              "neo4j"
-              "secret")); user/pass
+  (db/connect (URI. "bolt://localhost:7687") ; uri
+    "neo4j"
+    "secret")) ; user/pass
 
-(def apoc-installed? false )
+(def apoc-installed? false)
 
 (def neo4j-version-cypher "call dbms.components() yield name, versions, edition
                             unwind versions as version
                             return name, version, edition ;")
-(db/defquery neo4j-version neo4j-version-cypher )
+(db/defquery neo4j-version neo4j-version-cypher)
 
 (db/defquery apoc-version "return apoc.version() as ApocVersion;")
 
 ; works, but could overflow jvm heap for large db's
 (db/defquery delete-all-nodes-simple!
-             "match (n) detach delete n;")
+  "match (n) detach delete n;")
 
 (db/defquery
   delete-all-nodes-apoc!
@@ -35,52 +35,64 @@
      return batches, total"))
 
 (db/defquery create-user ; creates a global Var function, taking a session or tx as 1st arg
-             "CREATE (u:User $User) 
-              return u as newb")
+  "CREATE (u:User $User)
+   return u as newb")
 
 (db/defquery get-all-users ; creates a global Var function, taking a session or tx as 1st arg
-             "MATCH (u:User) 
-              RETURN u as UZZER")
+  "MATCH (u:User)
+   RETURN u as UZZER")
 
+; Example usage of neo4j-clj
 (dotest
-  ; Example usage of neo4j-clj
-
   ; Using a session
+  (newline)
   (println "Creating session...")
   (with-open [session (db/get-session dbconn)]
-    (println "Getting version (1)...")
-    (spyx (neo4j-version session))
-    (println "Getting version (2)...")
-    (spyx (db/execute session  neo4j-version-cypher))
+    ; Since all unit tests are contained within the session `with-open`, the lazy results
+    ; are automatically consumed via comparison operators. So we don't need to use either
+    ; `(vec ...)` or `(unlazy ...)`
+
+    (println "Getting Neo4j version info")
+    (let [v1            (neo4j-version session) ; "db/defquery" access to DB
+          v2            (db/execute session neo4j-version-cypher) ; "db/execute" produces same result
+          vers-info     (only v1)
+          neo4j-version (:version vers-info)]
+      (is= v1 v2)
+      (is= (:name vers-info) "Neo4j Kernel")
+      (is (str/increasing-or-equal? "4.0" neo4j-version))
+      (is= (:edition vers-info) "enterprise"))
 
     (try
-      (let [apoc-version (unlazy (apoc-version session))]
-        (println "found APOC library")
-        (is= apoc-version [{:ApocVersion "4.2.0.0"}])
-        (def apoc-installed? true))
+      (println "Getting APOC version info")
+      (let [apoc-version (apoc-version session)]
+        (println "  found APOC library")
+        (let [apoc-version (grab :ApocVersion (only apoc-version))]
+          (is (str/increasing-or-equal? "4.0" apoc-version)))
+
+        (def apoc-installed? true)) ; no exception, so set to true
       (catch Exception <>
-        (println "*** APOC not installed ***")))
+        (println "  *** APOC not installed ***")))
 
     (if apoc-installed?
       (is= [{:batches 1 :total 3}] ; deleted users in DB from previous run
-        (vec ; consume all lazy input
-          (delete-all-nodes-apoc! session)))
+        (delete-all-nodes-apoc! session))
       (delete-all-nodes-simple! session))
 
     (is= [{:newb {:first-name "Luke" :last-name "Skywalker"}}]
-         (create-user session {:User {:first-name "Luke" :last-name "Skywalker"}}))
+      (create-user session {:User {:first-name "Luke" :last-name "Skywalker"}}))
     (is= [{:newb {:first-name "Leia" :last-name "Organa"}}]
-         (create-user session {:User {:first-name "Leia" :last-name "Organa"}}))
+      (create-user session {:User {:first-name "Leia" :last-name "Organa"}}))
     (is= [{:newb {:first-name "Anakin" :last-name "Skywalker"}}]
-         (create-user session {:User {:first-name "Anakin" :last-name "Skywalker"}}))
-  )
+      (create-user session {:User {:first-name "Anakin" :last-name "Skywalker"}}))
+    )
 
   ; Using a transaction
   (let [result (db/with-transaction dbconn tx
-                                    (unlazy ; or `vec`
-                                      (get-all-users tx)))]
+                 ; result is consumed outside of TX, so we must realize lazy output
+                 ; via `unlazy`, `vec`, or `doall`
+                 (unlazy (get-all-users tx)))]
     (is= result
-         [{:UZZER {:first-name "Luke" :last-name "Skywalker"}}
-          {:UZZER {:first-name "Leia" :last-name "Organa"}}
-          {:UZZER {:first-name "Anakin" :last-name "Skywalker"}}]))
-)
+      [{:UZZER {:first-name "Luke" :last-name "Skywalker"}}
+       {:UZZER {:first-name "Leia" :last-name "Organa"}}
+       {:UZZER {:first-name "Anakin" :last-name "Skywalker"}}]))
+  )
