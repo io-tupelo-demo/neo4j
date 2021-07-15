@@ -14,9 +14,10 @@
 
 (def apoc-installed? false )
 
-(db/defquery neo4j-version "call dbms.components() yield name, versions, edition 
-                            unwind versions as version 
+(def neo4j-version-cypher "call dbms.components() yield name, versions, edition
+                            unwind versions as version
                             return name, version, edition ;")
+(db/defquery neo4j-version neo4j-version-cypher )
 
 (db/defquery apoc-version "return apoc.version() as ApocVersion;")
 
@@ -41,12 +42,16 @@
              "MATCH (u:User) 
               RETURN u as UZZER")
 
-(dotest-focus
+(dotest
   ; Example usage of neo4j-clj
 
   ; Using a session
+  (println "Creating session...")
   (with-open [session (db/get-session dbconn)]
+    (println "Getting version (1)...")
     (spyx (neo4j-version session))
+    (println "Getting version (2)...")
+    (spyx (db/execute session  neo4j-version-cypher))
 
     (try
       (let [apoc-version (unlazy (apoc-version session))]

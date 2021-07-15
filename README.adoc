@@ -1,43 +1,22 @@
 
-= Clojure Template Project
+= Neo4J Demo in Clojure
 
-A simple template for Clojure projects
+A simple demo accessing Neo4J using the `gorillalabs/neo4j-clj` library.
 
-== Overview
+== Installation
 
-This Clojure project shows my favorite layout of for both source & test files
-(sample Java source is included as well).  The project is also set-up to use the
-https://github.com/cloojure/tupelo[Tupelo Clojure] library and the
-https://github.com/jakemcc/lein-test-refresh[lein-test-refresh] plugin.
+This project assumes you have already installed Neo4J Desktop (Enterprise Edition). It is availble
+for free for local use.  When you download the installer, be sure to copy the Activition Code and
+save it.  You will need the Activation Code during the installation process.
 
-== How to User This Project
+Since the Neo4J Desktop is free to use for development, I have not played around with the
+open source Docker version of Neo4J.
 
-To use this project, we assume you have already installed Java, Clojure, and Leiningen, and `git`.
+== Configuration after installation
 
-=== Clone the Project Using Git
-
-Verify you have Git installed:
-
-```bash
-> git --version
-git version 2.25.0
-```
-
-Use `git` to clone the project (via SSH) into a new project names `demo`:
-```bash
-> git clone  git@github.com:io-tupelo/clj-template.git  demo  # git ssh URL
-```
-
-or, clone via HTTPS (if you don't have SSH set up on your computer & GitHub):
-```bash
-> git clone  https://github.com/io-tupelo/clj-template.git  demo  # git https URL
-```
-
-Then `cd` (change directory) into the new project:
-
-```bash
-> cd demo
-```
+- Click the top-left "project" icon, then the `+ New` button to create a new DB.  For development purposes,
+set the password to "secret" when prompted.  The name of the new DB should default to "neo4j". These creds must
+be correct or the code can't connect to the DB (it will fail auth).
 
 === Verify you have Java, Clojure, and Leiningen set up correctly
 
@@ -53,11 +32,23 @@ Java HotSpot(TM) 64-Bit Server VM (build 13+33, mixed mode, sharing)
 Leiningen 2.9.1 on Java 13 Java HotSpot(TM) 64-Bit Server VM
 ```
 
+== Run the Unit Tests
+
+I do this so much I have some bash aliases:
+
+```bash
+alias lct=" time (lein do clean, test)"
+alias lctr="time (lein do clean, test-refresh)"
+```
+
+The first one `lct` is generic, the 2nd one `lctr` is for use with the lein-test-refresh plugin.
+
 == Running Unit Tests - Plain
 
-```pre
-> lein clean
-> lein test
+Just type
+
+```bash
+> lct   # or `lein clean ; lein test`
 ```
 
 with result:
@@ -99,60 +90,58 @@ alias lctr="lein do clean, test-refresh"    # lctr => Lein Clean Test-Refresh
 with result:
 
 ```pre
-Testing _bootstrap
--------------------------------
-   Clojure 1.10.1    Java 13
--------------------------------
+-----------------------------------
+   Clojure 1.10.3    Java 15.0.2
+-----------------------------------
 
-Testing tst.demo.core
-result => "Hello, World!\n"
+lein test tst.demo.core
+Creating session...
+Getting version (1)...
+(neo4j-version session) => ({:name "Neo4j Kernel", :version "4.3.1", :edition "enterprise"})
+Getting version (2)...
+(db/execute session neo4j-version-cypher) => ({:name "Neo4j Kernel", :version "4.3.1", :edition "enterprise"})
+*** APOC not installed ***
 
-Ran 4 tests containing 6 assertions.
+Ran 2 tests containing 4 assertions.
 0 failures, 0 errors.
-
-Passed all tests
-Finished at 07:56:48.252 (run time: 6.709s)
-...
+( lein do clean, test; )  30.19s user 0.87s system 320% cpu 9.698 total
 ```
 
-in this instance, the test output pauses after printing the elapsed time, and waits to re-run
-upon any file change. For example, make a simple change in the namespace `demo.core`  by adding
-the word "Again!" to the `println` expression, and watch as the tests are automatically re-run:
+The message "*** APOC not installed ***" shows that we have not installed the free APOC library of
+functions for Neo4J.
+We want to install APOC. The APOC library is free and very useful, so we normally want to have it available.
+
+### Install the APOC library
+
+In the Neo4j Desktop window, highlight your project in the left-hand
+nav pane..  Then click near the green "ACTIVE" label, which will open the "Manage" screen on the RHS of the screen.
+Click on Plugins -> APOC -> Install and Restart.  After the DB has restarted, re-run the tests.
 
 ```pre
-...
-Testing tst.demo.core
-result => "Hello, World! Again!\n"
-...
-Finished at 07:59:53.863 (run time: 0.034s)
+> lct
+Java HotSpot(TM) 64-Bit Server VM warning: Options -Xverify:none and -noverify were deprecated in JDK 13 and will likely be removed in a future release.
+2021-07-15T16:34:45.646307497 INFO Driver - Direct driver instance 643411416 created for server address localhost:7687
+
+lein test _bootstrap
+
+-----------------------------------
+   Clojure 1.10.3    Java 15.0.2
+-----------------------------------
+
+lein test tst.demo.core
+Creating session...
+Getting version (1)...
+(neo4j-version session) => ({:name "Neo4j Kernel", :version "4.3.1", :edition "enterprise"})
+Getting version (2)...
+(db/execute session neo4j-version-cypher) => ({:name "Neo4j Kernel", :version "4.3.1", :edition "enterprise"})
+found APOC library
+
+Ran 2 tests containing 6 assertions.
+( lein do clean, test; )  32.61s user 0.85s system 292% cpu 11.452 total
 ```
 
-Note that the tests were all re-run in only 34 milliseconds (nearly instantaneous), since the JVM was already
-started and Clojure itself (plus library code) has already been compiled.
+Notice that this time it found the APOC library.
 
-=== Using "Focus" Mode
-
-Change one of the `dotest` forms in `tst.demo.core` to `dotest-focus`.  If there is at least one `dotest-focus` present
-in the project, then ***only*** the "focus" tests will be run.  This is helpful when you want to
-temporarily focus on a specific feature, without the distraction of all the other tests runnning.
-
-Note that only `lein test-refresh` (i.e. `lctr`) will honor the `focus` mode; `lein test` (i.e. `lct`) will always run all tests.
-
-== Running Unit Tests with Deps/CLI & Kaocha
-
-These files allow one to test/run the code via Deps/CLI:
-
- - deps.edn
- - tests.edn
- - bin/kaocha
-
-Just type the following to run the unit tets:
-
-```pre
-> bin/kaocha
-```
-
-It will also compile any Java source code and include it in the unit tests.
 
 == Keeping Dependency Versions Up-To-Date
 
@@ -171,48 +160,9 @@ all artifacts are up-to-date.
 
 if you are already up-to-date on everything.
 
-== Plumatic Schema
-
-The function `demo.core/add2` shows the usage of https://github.com/plumatic/schema[Plumatic Schema] to document
-function argument types and return value type.  This is a lifesaver!
-
-== Documentation
-
-- The https://github.com/cloojure/tupelo[Tupelo Clojure] library on GitHub
-- The Tupelo Clojure https://cljdoc.org/d/tupelo/tupelo/0.9.183/doc/readme[API Docs] on cljdoc.org
-- The https://clojure.org/api/cheatsheet[Clojure CheatSheet].  Always have a browser tab open here,
-  and **__study frequently!__**
-- The https://cljs.info/cheatsheet[ClojureScript CheatSheet].  **__Another great resource!__**
-- The above links to examples on http://clojuredocs.org/[ClojureDocs.org]
-- Also see http://clojure-doc.org/[Clojure-Doc.org] (similar name, different website!)
-- API Documentation for most any Clojure library can be found link:https://cljdoc.org/[at cljdoc.org]
-- The online book https://www.braveclojure.com/[Brave Clojure].  Be sure to also buy a copy!
-- The book https://pragprog.com/book/roclojure/getting-clojure[Getting Clojure]
-- The book https://www.oreilly.com/library/view/living-clojure/9781491909270/[Living Clojure]
-- The https://github.com/clojure-cookbook/clojure-cookbook[Clojure Cookbook]
-- The https://www.clojure-toolbox.com/[Clojure Toolbox] has a large list of libraries you can use
-- https://clojure.org/[Clojure.org] and https://clojurescript.org[ClojureScript.org] - the mothership
-
 == License
 
-Copyright © 2020  Alan Thompson
+Copyright © 2021  Alan Thompson
 
 Distributed under the link:https://www.eclipse.org/legal/epl-v10.html[Eclipse Public License], the same as Clojure.
-
-== Development Environment
-
-Developed using link:https://www.jetbrains.com/idea/[*IntelliJ IDEA*] 
-with the link:https://cursive-ide.com/[*Cursive* Clojure plugin].
-
-image:resources/intellij-idea-logo-400.png[IntelliJ,200,200]
-
-image:resources/cursive-logo-300.png[Cursive]
-
-YourKit supports open source projects with its full-featured Java Profiler.
-YourKit, LLC is the creator of
-link:https://www.yourkit.com/java/profiler/[YourKit Java Profiler]
-and link:https://www.yourkit.com/.net/profiler/[YourKit .NET Profiler],
-innovative and intelligent tools for profiling Java and .NET applications.
-
-image:https://www.yourkit.com/images/yklogo.png[YourKit,400,400]
 
