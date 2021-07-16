@@ -14,19 +14,17 @@
 
 (def apoc-installed? false)
 
-(def neo4j-version-cypher "call dbms.components() yield name, versions, edition
-                            unwind versions as version
-                            return name, version, edition ;")
+(def neo4j-version-cypher ; cypher command string used 2 ways
+  "call dbms.components() yield name, versions, edition
+   unwind versions as version
+   return name, version, edition ;")
 (db/defquery neo4j-version neo4j-version-cypher)
-
 (db/defquery apoc-version "return apoc.version() as ApocVersion;")
 
-; works, but could overflow jvm heap for large db's
-(db/defquery delete-all-nodes-simple!
+(db/defquery delete-all-nodes-simple!  ; works, but could overflow jvm heap for large db's
   "match (n) detach delete n;")
 
-(db/defquery
-  delete-all-nodes-apoc!
+(db/defquery delete-all-nodes-apoc! ; APOC function works in batches - safe for large db's
   (str/quotes->double
     "call apoc.periodic.iterate( 'MATCH (n)  return n', 
                                  'DETACH DELETE n',
@@ -44,6 +42,16 @@
 
 ; Example usage of neo4j-clj
 (dotest
+  (spyx-pretty dbconn)
+  (is (map? dbconn))
+  (is-set= (keys dbconn)
+    [:url ; java.net.URI "bolt://localhost:7687"
+     :user ; "neo4j",
+     :password ; "secret",
+     :db  ;  org.neo4j.driver.internal.InternalDriver object
+     :destroy-fn ; a clojure function
+     ])
+
   ; Using a session
   (newline)
   (println "Creating session...")
