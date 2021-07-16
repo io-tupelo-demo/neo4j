@@ -54,53 +54,15 @@ Just type
 with result:
 
 ```pre
-lein test _bootstrap
--------------------------------
-   Clojure 1.10.1    Java 13
--------------------------------
-
-lein test tst.demo.core
-result => "Hello, World!\n"
-
-Ran 4 tests containing 6 assertions.
-0 failures, 0 errors.
-```
-
-I do the above so often that I have a Bash/Zsh alias set up:
-
-```bash
-alias lct="time (lein do clean, test)"       # lct => Lein Clean Test
-```
-
-== Running Unit Tests with `lein test-refresh`
-
-IMHO, https://github.com/jakemcc/lein-test-refresh[the lein-test-refresh project] provides the best way of doing
-iterative development in Clojure, re-running unit tests every time you save a source file from the editor.
-
-```pre
-> lein test-refresh
-```
-
-or make an alias:
-
-```bash
-alias lctr="lein do clean, test-refresh"    # lctr => Lein Clean Test-Refresh
-```
-
-with result:
-
-```pre
 -----------------------------------
    Clojure 1.10.3    Java 15.0.2
 -----------------------------------
 
 lein test tst.demo.core
 Creating session...
-Getting version (1)...
-(neo4j-version session) => ({:name "Neo4j Kernel", :version "4.3.1", :edition "enterprise"})
-Getting version (2)...
-(db/execute session neo4j-version-cypher) => ({:name "Neo4j Kernel", :version "4.3.1", :edition "enterprise"})
-*** APOC not installed ***
+Getting Neo4j version info
+Getting APOC version info
+  *** APOC not installed ***
 
 Ran 2 tests containing 4 assertions.
 0 failures, 0 errors.
@@ -111,7 +73,7 @@ The message "*** APOC not installed ***" shows that we have not installed the fr
 functions for Neo4J.
 We want to install APOC. The APOC library is free and very useful, so we normally want to have it available.
 
-### Install the APOC library
+=== Install the APOC library
 
 In the Neo4j Desktop window, highlight your project in the left-hand
 nav pane..  Then click near the green "ACTIVE" label, which will open the "Manage" screen on the RHS of the screen.
@@ -130,11 +92,9 @@ lein test _bootstrap
 
 lein test tst.demo.core
 Creating session...
-Getting version (1)...
-(neo4j-version session) => ({:name "Neo4j Kernel", :version "4.3.1", :edition "enterprise"})
-Getting version (2)...
-(db/execute session neo4j-version-cypher) => ({:name "Neo4j Kernel", :version "4.3.1", :edition "enterprise"})
-found APOC library
+Getting Neo4j version info
+Getting APOC version info
+  found APOC library
 
 Ran 2 tests containing 6 assertions.
 ( lein do clean, test; )  32.61s user 0.85s system 292% cpu 11.452 total
@@ -142,6 +102,11 @@ Ran 2 tests containing 6 assertions.
 
 Notice that this time it found the APOC library.
 
+== Code Structure
+
+All interesting code is in the NS `tst.demo.core`, under the `test` directory.  I like this naming structure better then
+the `-test` suffix as it doesn't mess with the filename, and there is no conflict between hyphens "core-test"
+vs underscores "core_test.clj".
 
 == Keeping Dependency Versions Up-To-Date
 
