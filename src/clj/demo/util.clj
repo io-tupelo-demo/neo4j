@@ -8,11 +8,13 @@
     [java.net URI]
   ))
 
+
+
 (def apoc-installed? false); assume APOC is not installed
 
 (defn neo4j-version
-  [dbconn]
-  (with-open [session (db/get-session dbconn)]
+  [driver]
+  (with-open [session (db/get-session driver)]
     (vec
       (db/execute
         session
@@ -21,20 +23,20 @@
        return name, version, edition ;"))))
 
 (defn apoc-version
-  [dbconn]
-  (with-open [session (db/get-session dbconn)]
+  [driver]
+  (with-open [session (db/get-session driver)]
     (vec (db/execute session
                      "return apoc.version() as ApocVersion;"))))
 
 (defn delete-all-nodes-simple!  ; works, but could overflow jvm heap for large db's
-  [dbconn]
-  (with-open [session (db/get-session dbconn)]
+  [driver]
+  (with-open [session (db/get-session driver)]
     (vec (db/execute session
                      "match (n) detach delete n;"))))
 
 (defn delete-all-nodes-apoc! ; APOC function works in batches - safe for large db's
-  [dbconn]
-  (with-open [session (db/get-session dbconn)]
+  [driver]
+  (with-open [session (db/get-session driver)]
     (vec
       (db/execute
         session
@@ -47,27 +49,27 @@
 
 (defn delete-all-nodes!
   "Delete all nodes & edges in the graph.  Uses apoc.periodic.iterate() if installed."
-  ([dbconn] (delete-all-nodes! dbconn true))
-  ([dbconn verbose?]
+  ([driver] (delete-all-nodes! driver true))
+  ([driver verbose?]
    (when verbose?
      (print "Getting Neo4j version...  ")
      (flush))
-   (let [neo4j-version (:version (only (neo4j-version dbconn)))]
+   (let [neo4j-version (:version (only (neo4j-version driver)))]
      (when verbose?
        (println neo4j-version))
      (try
        (when verbose?
          (print "Getting APOC version info...  ")
          (flush))
-       (let [apoc-version (grab :ApocVersion (only (apoc-version dbconn)))]
+       (let [apoc-version (grab :ApocVersion (only (apoc-version driver)))]
          (when verbose?
            (println apoc-version))
          (def apoc-installed? true)) ; no exception, so APOC is installed
        (catch Exception <>
          (println "  *** APOC not installed ***"))))
    (if apoc-installed?
-     (delete-all-nodes-apoc! dbconn)
-     (delete-all-nodes-simple! dbconn))))
+     (delete-all-nodes-apoc! driver)
+     (delete-all-nodes-simple! driver))))
 
 
 

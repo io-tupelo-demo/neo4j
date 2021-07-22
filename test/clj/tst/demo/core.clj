@@ -8,7 +8,7 @@
     [java.net URI])
 )
 
-(def dbconn
+(def driver
   (db/connect (URI. "bolt://localhost:7687")  ; uri
               "neo4j"
               "secret")); user/pass
@@ -23,21 +23,21 @@
 
 (dotest
   ; Example usage of neo4j-clj
-  (is= (util/neo4j-version dbconn)
+  (is= (util/neo4j-version driver)
      [{:name "Neo4j Kernel", :version "4.2.1", :edition "enterprise"}] )
 
   (is= [{:batches 1 :total 3}]  ; deleted users in DB from previous run
-       (util/delete-all-nodes! dbconn))
+       (util/delete-all-nodes! driver))
 
   (try
-    (let [vers-str (unlazy (util/apoc-version dbconn))]
+    (let [vers-str (unlazy (util/apoc-version driver))]
       (println "found APOC library")
       (is= vers-str [{:ApocVersion "4.2.0.0"}]))
     (catch Exception <>
       (println "*** APOC not installed ***")))
 
   ; Using a session
-  (with-open [session (db/get-session dbconn)]
+  (with-open [session (db/get-session driver)]
     ; tests consume all output within the session lifetime
     (is= [{:newb {:first-name "Luke" :last-name "Skywalker"}}]
          (create-user session {:User {:first-name "Luke" :last-name "Skywalker"}}))
@@ -48,7 +48,7 @@
   )
 
   ; Using a transaction
-  (let [result (db/with-transaction dbconn tx
+  (let [result (db/with-transaction driver tx
                                     ; or vec/doall to realize output within tx life
                                     (unlazy
                                       (get-all-users tx)))]
