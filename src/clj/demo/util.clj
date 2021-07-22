@@ -15,6 +15,11 @@
 (def ^:dynamic SESSION nil) ; #todo add earmuffs
 
 ;-----------------------------------------------------------------------------
+; #todo ->URI
+; #todo connection-map {:uri :username :password}
+
+
+;-----------------------------------------------------------------------------
 (defn with-conn-impl
   [[uri user pass & forms]]
   `(binding [demo.util/NEOCONN (db/connect (URI. ~uri) ~user ~pass)]

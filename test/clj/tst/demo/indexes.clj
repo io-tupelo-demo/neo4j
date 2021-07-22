@@ -44,8 +44,7 @@
         (is=
           []
           (util/exec-sess
-            "create constraint  cnstrUniqueMovieTitle
-                           if not exists
+            "create constraint  cnstrUniqueMovieTitle  if not exists
                            on (m:Movie) assert m.title is unique;"))
         (let [result (only (util/exec-sess "show constraints  ;"))]
           (spyx result)
@@ -58,8 +57,25 @@
                   :properties    ("title")
                   :ownedIndexId  :*}
                 result)))
-
         (throws? (create-movie {:Data {:title "Raiders"}})) ; duplicate title
+
+        (is= []
+          (util/exec-sess
+            "create index  idxMovieTitle  if not exists
+                           for (m:Movie) on (m.title);"))
+        (let [result (only (util/exec-sess "show indexes;")) ]
+          (is (wild-match?  
+                {:entityType "NODE"
+                 :id :*
+                 :indexProvider "native-btree-1.0"
+                 :labelsOrTypes ["Movie"]
+                 :name "cnstrUniqueMovieTitle"
+                 :populationPercent 100.0
+                 :properties ["title"]
+                 :state "ONLINE"
+                 :type "BTREE"
+                 :uniqueness "UNIQUE"}
+                result)))
 
       )))
 
