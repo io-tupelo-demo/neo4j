@@ -7,7 +7,7 @@
     [tupelo.core :as t]))
 
 ; Prismatic Schema type definitions
-(s/set-fn-validation! true) ; enforce fn schemas
+(s/set-fn-validation! true); enforce fn schemas
 
 (dotest
   (t/print-versions))

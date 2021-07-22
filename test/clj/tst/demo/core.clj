@@ -24,7 +24,7 @@
 (dotest
   ; Example usage of neo4j-clj
   (is= (util/neo4j-version driver)
-     [{:name "Neo4j Kernel", :version "4.2.1", :edition "enterprise"}] )
+       [{:name "Neo4j Kernel" :version "4.2.1" :edition "enterprise"}])
 
   (is= [{:batches 1 :total 3}]  ; deleted users in DB from previous run
        (util/delete-all-nodes! driver))
@@ -48,7 +48,8 @@
   )
 
   ; Using a transaction
-  (let [result (db/with-transaction driver tx
+  (let [result (db/with-transaction driver
+                                    tx
                                     ; or vec/doall to realize output within tx life
                                     (unlazy
                                       (get-all-users tx)))]

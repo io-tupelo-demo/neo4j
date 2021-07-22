@@ -9,7 +9,47 @@
   ))
 
 
+; a neo4j connection map with the driver under `:db`
+(def ^:dynamic NEOCONN nil)
 
+; a neo4j Session object
+(def ^:dynamic SESSION nil)
+
+;-----------------------------------------------------------------------------
+(defn with-conn-impl
+  [[uri user pass & forms]]
+  `(binding [demo.util/NEOCONN (db/connect (URI. ~uri) ~user ~pass)]
+     (with-open [driver# (:db demo.util/NEOCONN)]
+       ; (println :drvr-open-enter driver#)
+       ~@forms
+       ; (println :drvr-open-leave driver#)
+     )))
+
+(defmacro with-conn
+  [& args]
+  (with-conn-impl args))
+
+;-----------------------------------------------------------------------------
+(defn with-session-impl
+  [forms]
+  `(binding [demo.util/SESSION (db/get-session demo.util/NEOCONN)]
+     (with-open [session# demo.util/SESSION]
+       ; (println :sess-open-enter session#)
+       ~@forms
+       ; (println :sess-open-leave session#)
+     )))
+
+(defmacro with-session
+  [& args]
+  (with-session-impl args))
+
+;-----------------------------------------------------------------------------
+(defn exec-sess
+  ([query] (db/execute demo.util/SESSION query))
+  ([query params] (db/execute demo.util/SESSION query params))
+)
+
+;-----------------------------------------------------------------------------
 (def apoc-installed? false); assume APOC is not installed
 
 (defn neo4j-version
