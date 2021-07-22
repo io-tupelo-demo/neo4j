@@ -8,12 +8,11 @@
     [java.net URI]
   ))
 
-
 ; a neo4j connection map with the driver under `:db`
-(def ^:dynamic NEOCONN nil)
+(def ^:dynamic NEOCONN nil) ; #todo add earmuffs
 
 ; a neo4j Session object
-(def ^:dynamic SESSION nil)
+(def ^:dynamic SESSION nil) ; #todo add earmuffs
 
 ;-----------------------------------------------------------------------------
 (defn with-conn-impl

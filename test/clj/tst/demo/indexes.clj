@@ -5,9 +5,7 @@
     [neo4j-clj.core :as db]
     [tupelo.string :as str])
   (:import
-    [java.net URI])
-)
-
+    [java.net URI]))
 
 (defn delete-all-movies!  ; works, but could overflow jvm heap for large db's
   []
@@ -15,14 +13,16 @@
 
 (defn create-movie
   [arg]
-  (unlazy (util/exec-sess "CREATE (m:Movie $Data) 
-                    return m as film" arg)))
-
+  (unlazy (util/exec-sess
+            "CREATE (m:Movie $Data) 
+            return m as film"
+            arg)))
 
 (defn get-all-movies
   []
-  (unlazy (util/exec-sess "MATCH (m:Movie) 
-                      RETURN m as flick")))
+  (unlazy (util/exec-sess
+            "MATCH (m:Movie) 
+            RETURN m as flick")))
 
 (dotest-focus
   (util/with-conn
@@ -35,6 +35,8 @@
         (spyx (create-movie {:Data {:title "The Matrix"}}))
         (spyx (create-movie {:Data {:title "Star Wars"}}))
         (spyx (create-movie {:Data {:title "Raiders"}}))
+        (newline)
+        (spyx-pretty (get-all-movies))
         (newline)
         (flush)
 
@@ -56,6 +58,8 @@
                   :properties    ("title")
                   :ownedIndexId  :*}
                 result)))
+
+        (throws? (create-movie {:Data {:title "Raiders"}})) ; duplicate title
 
       )))
 
