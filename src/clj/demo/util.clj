@@ -53,6 +53,14 @@
   ([query params] (db/execute demo.util/SESSION query params))
 )
 
+(defn auto-version 
+  []
+  (vec
+    (exec-sess
+      "call dbms.components() yield name, versions, edition
+       unwind versions as version
+       return name, version, edition ;")))
+
 ;-----------------------------------------------------------------------------
 (def apoc-installed? false); assume APOC is not installed
 

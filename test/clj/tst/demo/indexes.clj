@@ -26,9 +26,15 @@
 
 (dotest-focus
   (util/with-conn
-    "bolt://localhost:7687" "neo4j"
-    "secret"
+    ; "bolt://localhost:7687" "neo4j" "secret"
+    "neo4j+s://4ca9bb9b.databases.neo4j.io" "neo4j" "g6o2KIftFE6EIYMUCIY9a6DW0oVcwihh7m0Z5DP-jcY"
+
       (util/with-session
+        (newline)
+        (spyx-pretty util/NEOCONN)
+        (newline)
+        (spyx (util/auto-version))
+
         (newline)
         (delete-all-movies!)
 
