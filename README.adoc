@@ -18,6 +18,10 @@ open source Docker version of Neo4J.
 set the password to "secret" when prompted.  The name of the new DB should default to "neo4j". These creds must
 be correct or the code can't connect to the DB (it will fail auth).
 
+- Be sure to click the "Start" button so the DB is active (not just the neo4j desktop).
+
+- Click on the "Plugins" tab in the RHS panel. Select "APOC" and install to the DB.
+
 === Verify you have Java, Clojure, and Leiningen set up correctly
 
 Try the following commands, and make sure you get similar output:
