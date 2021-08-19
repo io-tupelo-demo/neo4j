@@ -23,15 +23,15 @@
 
 (dotest
   ; Example usage of neo4j-clj
-  (is= (spyx (util/neo4j-version driver))
-       [{:name "Neo4j Kernel" :version "4.2.3" :edition "enterprise"}])
+  (is= (util/neo4j-version driver)
+    [{:name "Neo4j Kernel" :version "4.3.3" :edition "enterprise"}])
 
-  (is= [{:batches 1 :total 3}]  ; deleted users in DB from previous run
-       (spyx (util/delete-all-nodes! driver)))
+  ; deleted users in DB from previous run
+  (util/delete-all-nodes! driver)
 
   (try
     (let [vers-str (unlazy (util/apoc-version driver))]
-      (println "found APOC library")
+      ; (println "found APOC library")
       (is= vers-str [{:ApocVersion "4.3.0.0"}]))
     (catch Exception <>
       (println "*** APOC not installed ***")))
@@ -56,5 +56,11 @@
     (is= result
          [{:UZZER {:first-name "Luke" :last-name "Skywalker"}}
           {:UZZER {:first-name "Leia" :last-name "Organa"}}
-          {:UZZER {:first-name "Anakin" :last-name "Skywalker"}}])))
+          {:UZZER {:first-name "Anakin" :last-name "Skywalker"}}]))
+  
+  
+  (is= [{:batches 1 :total 3}]  ; delete all users from DB 
+       (util/delete-all-nodes! driver))
+
+  )
 

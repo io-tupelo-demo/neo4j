@@ -101,7 +101,7 @@
 
 (defn delete-all-nodes!
   "Delete all nodes & edges in the graph.  Uses apoc.periodic.iterate() if installed."
-  ([driver] (delete-all-nodes! driver true))
+  ([driver] (delete-all-nodes! driver false))
   ([driver verbose?]
    (when verbose?
      (print "Getting Neo4j version...  ")

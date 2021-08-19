@@ -14,13 +14,36 @@ open source Docker version of Neo4J.
 
 == Configuration after installation
 
-- Click the top-left "project" icon, then the `+ New` button to create a new DB.  For development purposes,
-set the password to "secret" when prompted.  The name of the new DB should default to "neo4j". These creds must
-be correct or the code can't connect to the DB (it will fail auth).
+Note that in the Neo4j Desktop browser, there are three (3) different entities to consider:
 
-- Be sure to click the "Start" button so the DB is active (not just the neo4j desktop).
+1. the Project
+2. the DBMS
+3. the DB
 
-- Click on the "Plugins" tab in the RHS panel. Select "APOC" and install to the DB.
+Keep in mind that a project can have multiple DBMS's, and a DBMS can have multiple DB's.
+
+For our purposes, create the following configuration in Neo4j Desktop:
+
+- Click the top-left "project" icon, then the `+ New` button to create a new project. Name it 
+  "Demo Project", for example.
+
+- In the top-right corner, click the "+ Add" button to add a "Local DBMS".  Change the default name
+  to "Unit Test DBMS", if desired.  For development purposes, set the password to "secret". Then,
+  click the blue "Create" button.  
+
+- Click on the DBMS name under the Project name in the Neo4j Desktop window to highlight it, then
+  click on the "Plugins" tab in the RHS panel. Select "APOC" and install to the DB.
+
+- Click on the DBMS name under the Project name in the Neo4j Desktop window to highlight it, then
+  click the green "Start" button so the DB is active (not just the neo4j desktop).  If you make any
+  changes to the DB config you'll need to click the "restart" to make then take effect.
+
+- The DBMS will create 2 DB's, "system" and "neo4j". We accept the default DB name "neo4j" in the
+  DBMS.  If you click the "Details" tab on the RHS panel, you should see the Bolt protocol running
+  on port 7687.
+
+- We depend on the DB name "neo4j", the password "secret", and the port 7687 being correct. 
+  These creds must be correct or the neo4j driver can't connect to the DB (it will fail auth).
 
 === Verify you have Java, Clojure, and Leiningen set up correctly
 
