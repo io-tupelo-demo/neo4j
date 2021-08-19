@@ -1,5 +1,5 @@
-(ns tst.demo.core
-  (:use demo.core tupelo.core tupelo.test)
+(ns tst.demo.orig
+  (:use tupelo.core tupelo.test)
   (:require
     [demo.util :as util]
     [neo4j-clj.core :as db]
@@ -8,6 +8,7 @@
     [java.net URI])
 )
 
+; a neo4j connection map with the driver under `:db`
 (def driver
   (db/connect (URI. "bolt://localhost:7687")  ; uri
               "neo4j"
@@ -22,21 +23,8 @@
               RETURN u as UZZER")
 
 (dotest
-  ; Example usage of neo4j-clj
-  (is= (util/neo4j-version driver)
-    [{:name "Neo4j Kernel" :version "4.3.3" :edition "enterprise"}])
-
-  (spyxx driver)
-
   ; deleted users in DB from previous run
   (util/delete-all-nodes! driver)
-
-  (try
-    (let [vers-str (unlazy (util/apoc-version driver))]
-      ; (println "found APOC library")
-      (is= vers-str [{:ApocVersion "4.3.0.0"}]))
-    (catch Exception <>
-      (println "*** APOC not installed ***")))
 
   ; Using a session
   (with-open [session (db/get-session driver)]
