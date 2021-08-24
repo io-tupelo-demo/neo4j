@@ -24,7 +24,7 @@
             "MATCH (m:Movie) 
             RETURN m as flick")))
 
-(dotest ; -focus
+(dotest-focus
   (util/with-conn
     ; "bolt://localhost:7687" "neo4j" "secret"
     "neo4j+s://4ca9bb9b.databases.neo4j.io" "neo4j" "g6o2KIftFE6EIYMUCIY9a6DW0oVcwihh7m0Z5DP-jcY"
@@ -69,7 +69,23 @@
           (util/exec-sess
             "create index  idxMovieTitle  if not exists
                            for (m:Movie) on (m.title);"))
-        (let [result (only (util/exec-sess "show indexes;")) ]
+        (comment
+          ; Sometimes (neo4j linux!) extraneous indexes are also returned
+          ; We need to filter them out before performing the test
+          {:properties nil,
+           :populationPercent 100.0,
+           :name
+           "__org_neo4j_schema_index_label_scan_store_converted_to_token_index",
+           :type "LOOKUP",
+           :state "ONLINE",
+           :uniqueness "NONUNIQUE",
+           :id 1,
+           :indexProvider "token-lookup-1.0",
+           :entityType "NODE",
+           :labelsOrTypes nil})
+        (let [idxs-found (it-> (util/exec-sess "show indexes;")
+                         (keep-if #(= (grab :name %) "cnstrUniqueMovieTitle") it))
+              idx-ours (only idxs-found) ] ; there should be only 1
           (is (wild-match?  
                 {:entityType "NODE"
                  :id :*
@@ -81,7 +97,7 @@
                  :state "ONLINE"
                  :type "BTREE"
                  :uniqueness "UNIQUE"}
-                result)))
+                idx-ours)))
 
       )))
 
