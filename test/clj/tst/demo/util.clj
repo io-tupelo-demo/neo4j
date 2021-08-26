@@ -10,9 +10,9 @@
 ;-----------------------------------------------------------------------------
 #_(dotest
     (spy-pretty :impl
-                (with-conn-impl '[
+                (with-connection-impl '[
                                   (URI. "bolt://localhost:7687") "neo4j" "secret"
-                                  (form1 NEOCONN)
+                                  (form1 *neo4j-conn-map*)
                                   (form2)
                                  ]))
   )
@@ -21,7 +21,7 @@
     (with-connection "bolt://localhost:7687" "neo4j"
                "secret"
                  ; (println :aa NEOCONN )
-                 (println :version (util/neo4j-version NEOCONN))
+                 (println :version (util/neo4j-version *neo4j-conn-map*))
                ; (println :zz NEOCONN )
     ))
 
@@ -30,7 +30,7 @@
 #_(dotest-focus
     (spy-pretty :impl
                 (with-session-impl '[
-                                     (form1 SESSION)
+                                     (form1 *neo4j-session*)
                                      (form2)
                                     ])))
 

@@ -9,38 +9,33 @@
   ))
 
 ; a neo4j connection map with the driver under `:db`
-(def ^:dynamic NEOCONN nil) ; #todo add earmuffs
+(def ^:dynamic *neo4j-conn-map* nil) ; #todo add earmuffs
 
 ; a neo4j Session object
-(def ^:dynamic SESSION nil) ; #todo add earmuffs
+(def ^:dynamic *neo4j-session* nil) ; #todo add earmuffs
 
 ;-----------------------------------------------------------------------------
-; #todo ->URI
-; #todo connection-map {:uri :username :password}
-
-
-;-----------------------------------------------------------------------------
-(defn with-conn-impl
+(defn with-connection-impl
   [[uri user pass & forms]]
-  `(binding [demo.util/NEOCONN (db/connect (URI. ~uri) ~user ~pass)]
-     (with-open [driver# (:db demo.util/NEOCONN)]
-       ; (println :drvr-open-enter driver#)
+  `(binding [demo.util/*neo4j-conn-map* (db/connect (URI. ~uri) ~user ~pass)]
+     (with-open [n4driver# (:db demo.util/*neo4j-conn-map*)]
+       ; (println :drvr-open-enter n4driver#)
        ~@forms
-       ; (println :drvr-open-leave driver#)
+       ; (println :drvr-open-leave n4driver#)
      )))
 
 (defmacro with-connection
   [& args]
-  (with-conn-impl args))
+  (with-connection-impl args))
 
 ;-----------------------------------------------------------------------------
 (defn with-session-impl
   [forms]
-  `(binding [demo.util/SESSION (db/get-session demo.util/NEOCONN)]
-     (with-open [session# demo.util/SESSION]
-       ; (println :sess-open-enter session#)
+  `(binding [demo.util/*neo4j-session* (db/get-session demo.util/*neo4j-conn-map*)]
+     (with-open [n4session# demo.util/*neo4j-session*]
+       ; (println :sess-open-enter n4session#)
        ~@forms
-       ; (println :sess-open-leave session#)
+       ; (println :sess-open-leave n4session#)
      )))
 
 (defmacro with-session
@@ -50,14 +45,14 @@
 ;-----------------------------------------------------------------------------
 (defn exec-session
   "Within the context of `(with-session ...)`, execute a neo4j command."
-  ([query] (db/execute demo.util/SESSION query))
-  ([query params] (db/execute demo.util/SESSION query params))
+  ([query] (db/execute demo.util/*neo4j-session* query))
+  ([query params] (db/execute demo.util/*neo4j-session* query params))
 )
 
 (defn neo4j-version
   []
-  (vec
-    (with-session
+  (with-session
+    (vec
       (exec-session
         "call dbms.components() yield name, versions, edition
          unwind versions as version

@@ -1,10 +1,8 @@
 (ns tst.demo.indexes
-  (:use tupelo.core
-        tupelo.test)
+  (:use tupelo.core tupelo.test)
   (:require
     [demo.util :as util]
-    [tupelo.string :as str])
-  )
+    [tupelo.string :as str]))
 
 (defn delete-all-movies! ; works, but could overflow jvm heap for large db's
   []
@@ -12,45 +10,60 @@
 
 (defn create-movie
   [arg]
-  (unlazy (util/exec-session
-            "CREATE (m:Movie $Data) 
-            return m as film"
-            arg)))
+  (unlazy (util/exec-session "CREATE (m:Movie $Data)
+                              return m as film" arg)))
 
 (defn get-all-movies
   []
-  (unlazy (util/exec-session
-            "MATCH (m:Movie) 
-            RETURN m as flick")))
+  (unlazy (util/exec-session "MATCH (m:Movie) RETURN m as flick")))
 
-(dotest   ; -focus
+(dotest-focus
+
   (util/with-connection
     ; "bolt://localhost:7687" "neo4j" "secret"
     "neo4j+s://4ca9bb9b.databases.neo4j.io" "neo4j" "g6o2KIftFE6EIYMUCIY9a6DW0oVcwihh7m0Z5DP-jcY"
 
-    (newline)
-    (spyx (util/neo4j-version))
+    (comment ; example
+      (newline) (spyx-pretty util/*neo4j-conn-map*)
+      ; {:url        #object[java.net.URI 0x1d4d84fb "neo4j+s://4ca9bb9b.databases.neo4j.io"],
+      ;  :user       "neo4j",
+      ;  :password   "g6o2KIftFE6EIYMUCIY9a6DW0oVcwihh7m0Z5DP-jcY",
+      ;  :db         #object[org.neo4j.driver.internal.InternalDriver 0x59e97f75 "org.neo4j.driver.internal.InternalDriver@59e97f75"],
+      ;  :destroy-fn #object[neo4j_clj.core$connect$fn__19085 0x1d696b35 "neo4j_clj.core$connect$fn__19085@1d696b35"]}
+
+      )
+
+    (let [vinfo (only (util/neo4j-version))]
+      ; example:  {:name "Neo4j Kernel", :version "4.2-aura", :edition "enterprise"}
+      (with-map-vals vinfo [name version]
+        (is= name "Neo4j Kernel")
+        (is (str/increasing-or-equal? "4.2" version))))
 
     (util/with-session
-      (newline)
-      (spyx-pretty util/NEOCONN)
+      (comment ; example
+        (newline) (spyx-pretty util/*neo4j-session*)
+        ; #object[org.neo4j.driver.internal.InternalSession 0x2eba393 "org.neo4j.driver.internal.InternalSession@2eba393"]
+        )
 
-      (newline)
       (delete-all-movies!)
 
-      (spyx (create-movie {:Data {:title "The Matrix"}}))
-      (spyx (create-movie {:Data {:title "Star Wars"}}))
-      (spyx (create-movie {:Data {:title "Raiders"}}))
-      (newline)
-      (spyx-pretty (get-all-movies))
-      (newline)
-      (flush)
+      ; note return type :film set by "return ... as ..."
+      (is= (create-movie {:Data {:title "The Matrix"}}) [{:film {:title "The Matrix"}}])
+      (is= (create-movie {:Data {:title "Star Wars"}}) [{:film {:title "Star Wars"}}])
+      (is= (create-movie {:Data {:title "Raiders"}}) [{:film {:title "Raiders"}}])
+
+      (throws? ; try to create a duplicate
+        (spyx (create-movie {:Data {:title "Raiders"}})))
+
+      ; note return type :flick set by "return ... as ..."
+      (is-set= (get-all-movies)
+        [{:flick {:title "The Matrix"}}
+         {:flick {:title "Star Wars"}}
+         {:flick {:title "Raiders"}}])
 
       (is= [] (util/exec-session "drop constraint cnstrUniqueMovieTitle if exists ;"))
-      (is= []
-        (util/exec-session
-          "create constraint  cnstrUniqueMovieTitle  if not exists
-                         on (m:Movie) assert m.title is unique;"))
+      (is= [] (util/exec-session "create constraint  cnstrUniqueMovieTitle  if not exists
+                                   on (m:Movie) assert m.title is unique;"))
       (let [result (only (util/exec-session "show constraints  ;"))]
         (spyx result)
         (is (wild-match?
@@ -82,8 +95,9 @@
          :indexProvider     "token-lookup-1.0",
          :entityType        "NODE",
          :labelsOrTypes     nil})
-      (let [idxs-found (it-> (util/exec-session "show indexes;")
-                         (keep-if #(= (grab :name %) "cnstrUniqueMovieTitle") it))
+      (let [idxs-found (vec (keep-if #(= (grab :name %) "cnstrUniqueMovieTitle")
+                              (util/exec-session "show indexes;")))
+            >>         (spyx idxs-found)
             idx-ours   (only idxs-found)] ; there should be only 1
         (is (wild-match?
               {:entityType        "NODE"
