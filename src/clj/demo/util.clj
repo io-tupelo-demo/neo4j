@@ -29,7 +29,7 @@
        ; (println :drvr-open-leave driver#)
      )))
 
-(defmacro with-conn
+(defmacro with-connection
   [& args]
   (with-conn-impl args))
 
@@ -48,31 +48,23 @@
   (with-session-impl args))
 
 ;-----------------------------------------------------------------------------
-(defn exec-sess
+(defn exec-session
+  "Within the context of `(with-session ...)`, execute a neo4j command."
   ([query] (db/execute demo.util/SESSION query))
   ([query params] (db/execute demo.util/SESSION query params))
 )
 
-(defn auto-version 
+(defn neo4j-version
   []
   (vec
-    (exec-sess
-      "call dbms.components() yield name, versions, edition
-       unwind versions as version
-       return name, version, edition ;")))
+    (with-session
+      (exec-session
+        "call dbms.components() yield name, versions, edition
+         unwind versions as version
+         return name, version, edition ;"))))
 
 ;-----------------------------------------------------------------------------
 (def apoc-installed? false); assume APOC is not installed
-
-(defn neo4j-version
-  [driver]
-  (with-open [session (db/get-session driver)]
-    (vec
-      (db/execute
-        session
-        "call dbms.components() yield name, versions, edition
-       unwind versions as version
-       return name, version, edition ;"))))
 
 (defn apoc-version
   [driver]

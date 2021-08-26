@@ -18,7 +18,7 @@
   )
 
 #_(dotest
-    (with-conn "bolt://localhost:7687" "neo4j"
+    (with-connection "bolt://localhost:7687" "neo4j"
                "secret"
                  ; (println :aa NEOCONN )
                  (println :version (util/neo4j-version NEOCONN))
@@ -26,14 +26,6 @@
     ))
 
 ;-----------------------------------------------------------------------------
-
-(defn get-vers
-  []
-  (vec
-    (exec-sess
-      "call dbms.components() yield name, versions, edition
-       unwind versions as version
-       return name, version, edition ;")))
 
 #_(dotest-focus
     (spy-pretty :impl
@@ -43,7 +35,7 @@
                                     ])))
 
 #_(dotest-focus
-    (with-conn "bolt://localhost:7687" "neo4j"
+    (with-connection "bolt://localhost:7687" "neo4j"
                "secret"
                  ; (println :use-00 NEOCONN )
                  (with-session
