@@ -17,7 +17,7 @@
   []
   (unlazy (util/exec-session "MATCH (m:Movie) RETURN m as flick")))
 
-(dotest-focus
+(dotest   ; -focus
 
   (util/with-connection
     ; "bolt://localhost:7687" "neo4j" "secret"
