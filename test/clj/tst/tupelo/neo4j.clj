@@ -56,7 +56,7 @@
       (is= (only
              (neo4j/session-run
                "use Springfield
-                create (u:user $Resident)  return u as Duffer"
+                create (p:Person $Resident) return p as Duffer"
                {:Resident {:first-name "Homer" :last-name "Simpson"}}))
         {:Duffer {:first-name "Homer", :last-name "Simpson"}})
 
