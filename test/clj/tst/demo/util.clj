@@ -1,11 +1,22 @@
 (ns tst.demo.util
-  (:use demo.util tupelo.core tupelo.test)
+  (:use tupelo.core tupelo.test)
   (:require
-    [neo4j-clj.core :as db]
-    [tupelo.string :as str])
-  (:import
-    [java.net URI])
-)
+    [tupelo.string :as str]
+    [demo.util :as util]
+    ))
+
+(dotest
+  (util/with-connection "bolt://localhost:7687" "neo4j" "secret"
+
+    (let [vinfo (util/neo4j-info)]
+      ; example:  {:name "Neo4j Kernel", :version "4.2-aura", :edition "enterprise"}
+      (with-map-vals vinfo [name version edition]
+        (is= name "Neo4j Kernel")
+        (is= edition "enterprise")
+        (is (str/increasing-or-equal? "4.2" version))))
+    (is (util/apoc-installed?))
+    (is (str/increasing-or-equal? "4.2" (util/apoc-version)))
+    ))
 
 ;-----------------------------------------------------------------------------
 #_(dotest
@@ -21,7 +32,7 @@
     (with-connection "bolt://localhost:7687" "neo4j"
                "secret"
                  ; (println :aa NEOCONN )
-                 (println :version (util/neo4j-version *neo4j-conn-map*))
+                 (println :version (util/neo4j-info *neo4j-conn-map*))
                ; (println :zz NEOCONN )
     ))
 
