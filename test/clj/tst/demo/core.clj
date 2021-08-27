@@ -7,12 +7,8 @@
   (:import
     [java.net URI]))
 
-(def driver
-  (db/connect (URI. "bolt://localhost:7687") ; uri
-    "neo4j" "secret")) ; user/pass
-
 (dotest   ; -focus
-  (neo4j/with-driver
+  (neo4j/with-driver  ; this is URI/username/password (not uri/db/pass!)
     "bolt://localhost:7687" "neo4j" "secret"
     ; "neo4j+s://4ca9bb9b.databases.neo4j.io" "neo4j" "g6o2KIftFE6EIYMUCIY9a6DW0oVcwihh7m0Z5DP-jcY"
 
@@ -50,6 +46,6 @@
            {:UZZER {:first-name "Anakin" :last-name "Skywalker"}}]))
 
       (is= [{:batches 1 :total 3}] ; delete all users from DB via APOC
-        (neo4j/delete-all-nodes! driver)))
+        (neo4j/delete-all-nodes! )))
 
     ))

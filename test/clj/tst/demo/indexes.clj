@@ -4,40 +4,23 @@
     [tupelo.neo4j :as neo4j]
     [tupelo.string :as str]))
 
-(defn delete-all-movies! ; works, but could overflow jvm heap for large db's
-  []
-  (unlazy (neo4j/session-run "match (m:Movie) detach delete m;")))
-
 (defn create-movie
-  [arg]
-  (unlazy (neo4j/session-run "CREATE (m:Movie $Data)
-                              return m as film" arg)))
+  [params]
+  (vec (neo4j/session-run "CREATE (m:Movie $Data)
+                           return m as film" params)))
 
 (defn get-all-movies
-  []
-  (unlazy (neo4j/session-run "MATCH (m:Movie) RETURN m as flick")))
+  [] (vec (neo4j/session-run "MATCH (m:Movie) RETURN m as flick")))
 
 (dotest   ; -focus
-
-  (neo4j/with-driver
-    ; "bolt://localhost:7687" "neo4j" "secret"
-    "neo4j+s://4ca9bb9b.databases.neo4j.io" "neo4j" "g6o2KIftFE6EIYMUCIY9a6DW0oVcwihh7m0Z5DP-jcY"
-
-    (comment ; example
-      (newline) (spyx-pretty neo4j/*neo4j-driver-map*)
-      ; {:url        #object[java.net.URI 0x1d4d84fb "neo4j+s://4ca9bb9b.databases.neo4j.io"],
-      ;  :user       "neo4j",
-      ;  :password   "g6o2KIftFE6EIYMUCIY9a6DW0oVcwihh7m0Z5DP-jcY",
-      ;  :db         #object[org.neo4j.driver.internal.InternalDriver 0x59e97f75 "org.neo4j.driver.internal.InternalDriver@59e97f75"],
-      ;  :destroy-fn #object[neo4j_clj.core$connect$fn__19085 0x1d696b35 "neo4j_clj.core$connect$fn__19085@1d696b35"]}
-
-      )
+  (neo4j/with-driver  ; this is URI/username/password (not uri/db/pass!)
+    "bolt://localhost:7687" "neo4j" "secret"
+    ; "neo4j+s://4ca9bb9b.databases.neo4j.io" "neo4j" "g6o2KIftFE6EIYMUCIY9a6DW0oVcwihh7m0Z5DP-jcY"
 
     (neo4j/with-session
-      (comment ; example
-        (newline) (spyx-pretty neo4j/*neo4j-session*)
-        ; #object[org.neo4j.driver.internal.InternalSession 0x2eba393 "org.neo4j.driver.internal.InternalSession@2eba393"]
-        )
+
+      (neo4j/drop-extraneous-dbs!)
+      (neo4j/session-run "create or replace database neo4j")
 
       (neo4j/delete-all-nodes!)
       (neo4j/constraints-drop-all!)
@@ -114,6 +97,9 @@
                :type              "BTREE"
                :uniqueness        "UNIQUE"}
               idx-ours)))
+
+      ; works, but could overflow jvm heap for large db's
+      (vec (neo4j/session-run "match (m:Movie) detach delete m;"))
 
       )))
 

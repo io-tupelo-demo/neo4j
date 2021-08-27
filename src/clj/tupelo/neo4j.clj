@@ -3,17 +3,27 @@
   (:require
     [neo4j-clj.core :as neolib]
     [schema.core :as s]
+    [tupelo.set :as set]
     [tupelo.string :as str]
     [tupelo.schema :as tsk])
   (:import
     [java.net URI]
     ))
 
-; a neo4j connection map with the driver under `:db`
+; A neo4j connection map with the driver under `:db`
+; #todo fork & cleanup from neo4j-clj.core to remove extraneous junk
 (def ^:dynamic *neo4j-driver-map* nil) ; #todo add earmuffs
+; Sample:
+;   {:url        #object[java.net.URI 0x1d4d84fb "neo4j+s://4ca9bb9b.databases.neo4j.io"],
+;    :user       "neo4j",
+;    :password   "g6o2KIftFE6EIYMUCIY9a6DW0oVcwihh7m0Z5DP-jcY",
+;    :db         #object[org.neo4j.driver.internal.InternalDriver 0x59e97f75 "org.neo4j.driver.internal.InternalDriver@59e97f75"],
+;    :destroy-fn #object[neo4j_clj.core$connect$fn__19085 0x1d696b35 "neo4j_clj.core$connect$fn__19085@1d696b35"]}
 
 ; a neo4j Session object
 (def ^:dynamic *neo4j-session* nil) ; #todo add earmuffs
+; Sample:
+;   #object[org.neo4j.driver.internal.InternalSession 0x2eba393 "org.neo4j.driver.internal.InternalSession@2eba393"]
 
 ; for debugging
 (def ^:dynamic *verbose* false) ; #todo add earmuffs
@@ -23,10 +33,9 @@
   [[uri user pass & forms]]
   `(binding [tupelo.neo4j/*neo4j-driver-map* (neolib/connect (URI. ~uri) ~user ~pass)]
      (with-open [n4driver# (:db tupelo.neo4j/*neo4j-driver-map*)]
-       ; (println :drvr-open-enter n4driver#)
+       (when *verbose* (spy :with-driver-impl--enter n4driver#))
        ~@forms
-       ; (println :drvr-open-leave n4driver#)
-       )))
+       (when *verbose* (spy :with-driver-impl--leave n4driver#)))))
 
 (defmacro with-driver
   [& args]
@@ -37,10 +46,9 @@
   [forms]
   `(binding [tupelo.neo4j/*neo4j-session* (neolib/get-session tupelo.neo4j/*neo4j-driver-map*)]
      (with-open [n4session# tupelo.neo4j/*neo4j-session*]
-       ; (println :sess-open-enter n4session#)
+       (when *verbose* (spy :sess-open-enter--enter n4session#))
        ~@forms
-       ; (println :sess-open-leave n4session#)
-       )))
+       (when *verbose* (spy :sess-open-leave--leave n4session#)))))
 
 (defmacro with-session
   [& args]
@@ -85,18 +93,47 @@
       false))) ; threw, so assume not installed
 
 (s/defn nodes-all :- tsk/Vec
-  []
-  (vec (session-run "match (n) return n as node;")))
+  [] (vec (session-run "match (n) return n as node;")))
 
+;-----------------------------------------------------------------------------
+(s/defn db-names-all :- [s/Str]
+  []
+  (mapv #(grab :name %) (session-run "show databases")))
+
+(s/defn drop-extraneous-dbs! :- [s/Str]
+  []
+  (let [keep-db-names #{"system" "neo4j"} ; never delete these DBs!
+        drop-db-names (set/difference (set (db-names-all)) keep-db-names)]
+    (doseq [db-name drop-db-names]
+      (session-run (format "drop database %s if exists" db-name)))))
+
+;-----------------------------------------------------------------------------
 (s/defn indexes-all :- [tsk/KeyMap]
-  []
-  (let [indexes (vec (session-run "show indexes;")) ; #todo all?
-        ]
-    indexes))
+  [] (vec (session-run "show indexes;")))
 
-(s/defn constraints-all :- [tsk/KeyMap]
+(s/defn indexes-user :- [tsk/KeyMap]
   []
-  (spyx (vec (session-run "show all constraints;"))))
+  (let [idxs-user (drop-if
+                    (fn [idx-map]
+                      (let [idx-name (grab :name idx-map)]
+                        (str/contains-str? idx-name "__org_neo4j")))
+                    (indexes-all))]
+    idxs-user))
+
+(s/defn indexes-drop!
+  [idx-name]
+  (let [cmd (format "drop index %s if exists" idx-name)]
+    (session-run cmd)))
+
+(s/defn indexes-drop-all!
+  []
+  (doseq [idx-map (indexes-user)]
+    (let [idx-name (grab :name idx-map)]
+      (indexes-drop! idx-name))))
+
+;-----------------------------------------------------------------------------
+(s/defn constraints-all :- [tsk/KeyMap]
+  [] (vec (session-run "show all constraints;")))
 
 (s/defn constraint-drop!
   [cnstr-name]
@@ -111,32 +148,7 @@
       (println "dropping constraint " cnstr-name)
       (constraint-drop! cnstr-name))))
 
-(s/defn indexes-user :- [tsk/KeyMap]
-  []
-  (nl)
-  (let [idxs-user (drop-if
-                    (fn [idx-map]
-                      (spyx idx-map)
-                      (let [idx-name (grab :name idx-map)]
-                        (str/contains-str? idx-name "__org_neo4j")))
-                    (indexes-all))]
-    (spyx-pretty idxs-user)
-    )
-  )
-
-(s/defn indexes-drop!
-  [idx-name]
-  (let [cmd (format "drop index %s if exists" idx-name)]
-    (spyx cmd)
-    (session-run cmd)))
-
-(s/defn indexes-drop-all!
-  []
-  (doseq [idx-map (indexes-all)]
-    (let [idx-name (grab :name idx-map)]
-      (println "dropping index " idx-name)
-      (indexes-drop! idx-name))))
-
+;-----------------------------------------------------------------------------
 (defn delete-all-nodes-simple! ; works, but could overflow jvm heap for large db's
   []
   (vec (session-run "match (n) detach delete n;")))

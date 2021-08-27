@@ -7,18 +7,7 @@
     [tupelo.string :as str]
     ))
 
-(s/defn db-names-all :- [s/Str]
-  []
-  (mapv #(grab :name %) (neo4j/session-run "show databases")))
-
-(s/defn drop-extraneous-dbs! :- [s/Str]
-  []
-  (let [keep-db-names #{"system" "neo4j"} ; never delete these DBs!
-        drop-db-names (set/difference (set (db-names-all)) keep-db-names)]
-    (doseq [db-name drop-db-names]
-      (neo4j/session-run (format "drop database %s if exists" db-name)))))
-
-(dotest-focus
+(dotest   ; -focus
   (neo4j/with-driver "bolt://localhost:7687" "neo4j" "secret" ; url/username/password
     (neo4j/with-session
 
@@ -36,15 +25,15 @@
       (is= (neo4j/apoc-version) "4.3.0.0"))
 
     (neo4j/with-session
-      (drop-extraneous-dbs!)
+      (neo4j/drop-extraneous-dbs!)
 
       ; "system" db is always present
       ; "neo4j" db is default name
-      (is-set= (db-names-all) #{"system" "neo4j"})
+      (is-set= (neo4j/db-names-all) #{"system" "neo4j"})
 
       (neo4j/session-run "create or replace database neo4j")
       (neo4j/session-run "create or replace database SPRINGFIELD") ; make a new DB
-      (is-set= (db-names-all) #{"system" "neo4j" "springfield"}) ; NOTE:  all lowercase
+      (is-set= (neo4j/db-names-all) #{"system" "neo4j" "springfield"}) ; NOTE:  all lowercase
 
       ; use default db "neo4j"
       (neo4j/session-run "CREATE (u:Jedi $Hero)  return u as padawan"
