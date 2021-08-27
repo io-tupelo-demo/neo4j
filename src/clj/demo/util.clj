@@ -85,10 +85,63 @@
     (catch Exception <>
       false))) ; threw, so assume not installed
 
-(s/defn all-nodes :- tsk/Vec
+(s/defn nodes-all :- tsk/Vec
   []
   (with-session
     (vec (session-run "match (n) return n as node;"))))
+
+(s/defn indexes-all :- [tsk/KeyMap]
+  []
+  (with-session
+    (let [indexes (vec  (session-run "show indexes;")) ; #todo all?
+          ]
+      indexes)))
+
+(s/defn constraints-all :- [tsk/KeyMap]
+  []
+  (with-session
+    (spyx (vec (session-run "show all constraints;")))))
+
+(s/defn constraint-drop!
+  [cnstr-name]
+  (with-session
+    (let [cmd (format "drop constraint %s if exists" cnstr-name)]
+      (spyx cmd)
+      (session-run cmd))))
+
+(s/defn constraints-drop-all!
+  []
+  (doseq [cnstr-map (constraints-all)]
+    (let [cnstr-name (grab :name cnstr-map)]
+      (println "dropping constraint " cnstr-name)
+      (constraint-drop! cnstr-name))))
+
+(s/defn indexes-user :- [tsk/KeyMap]
+  []
+  (nl)
+  (let [idxs-user (drop-if
+          (fn [idx-map]
+            (spyx idx-map)
+            (let [idx-name (grab :name idx-map)]
+              (str/contains-str? idx-name "__org_neo4j")))
+          (indexes-all))]
+    (spyx-pretty idxs-user)
+    )
+  )
+
+(s/defn indexes-drop!
+  [idx-name]
+  (with-session
+    (let [cmd (format "drop index %s if exists" idx-name)]
+      (spyx cmd)
+      (session-run cmd))))
+
+(s/defn indexes-drop-all!
+  []
+  (doseq [idx-map (indexes-all)]
+    (let [idx-name (grab :name idx-map)]
+      (println "dropping index " idx-name)
+      (indexes-drop! idx-name))))
 
 (defn delete-all-nodes-simple! ; works, but could overflow jvm heap for large db's
   []

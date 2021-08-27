@@ -35,7 +35,7 @@
           [{:newb {:first-name "Leia" :last-name "Organa"}}])
         (is= (util/session-run create-user-cmd {:User {:first-name "Anakin" :last-name "Skywalker"}})
           [{:newb {:first-name "Anakin" :last-name "Skywalker"}}])
-        (is= 3 (count (util/all-nodes)))))
+        (is= 3 (count (util/nodes-all)))))
 
     (comment
       ; Using a transaction
