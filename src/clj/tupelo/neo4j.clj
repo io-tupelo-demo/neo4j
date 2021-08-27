@@ -1,4 +1,4 @@
-(ns demo.util
+(ns tupelo.neo4j
   (:use tupelo.core)
   (:require
     [neo4j-clj.core :as neolib]
@@ -21,8 +21,8 @@
 ;-----------------------------------------------------------------------------
 (defn with-driver-impl
   [[uri user pass & forms]]
-  `(binding [demo.util/*neo4j-driver-map* (neolib/connect (URI. ~uri) ~user ~pass)]
-     (with-open [n4driver# (:db demo.util/*neo4j-driver-map*)]
+  `(binding [tupelo.neo4j/*neo4j-driver-map* (neolib/connect (URI. ~uri) ~user ~pass)]
+     (with-open [n4driver# (:db tupelo.neo4j/*neo4j-driver-map*)]
        ; (println :drvr-open-enter n4driver#)
        ~@forms
        ; (println :drvr-open-leave n4driver#)
@@ -35,8 +35,8 @@
 ;-----------------------------------------------------------------------------
 (defn with-session-impl
   [forms]
-  `(binding [demo.util/*neo4j-session* (neolib/get-session demo.util/*neo4j-driver-map*)]
-     (with-open [n4session# demo.util/*neo4j-session*]
+  `(binding [tupelo.neo4j/*neo4j-session* (neolib/get-session tupelo.neo4j/*neo4j-driver-map*)]
+     (with-open [n4session# tupelo.neo4j/*neo4j-session*]
        ; (println :sess-open-enter n4session#)
        ~@forms
        ; (println :sess-open-leave n4session#)
@@ -49,7 +49,7 @@
 ;-----------------------------------------------------------------------------
 (s/defn session-run :- tsk/Vec
   "Within the context of `(with-session ...)`, run a neo4j cypher command."
-  [query & args] (apply neolib/execute demo.util/*neo4j-session* query args))
+  [query & args] (apply neolib/execute tupelo.neo4j/*neo4j-session* query args))
 
 (s/defn neo4j-info :- tsk/KeyMap
   []

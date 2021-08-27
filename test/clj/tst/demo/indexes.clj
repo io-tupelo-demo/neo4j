@@ -1,30 +1,30 @@
 (ns tst.demo.indexes
   (:use tupelo.core tupelo.test)
   (:require
-    [demo.util :as util]
+    [tupelo.neo4j :as neo4j]
     [tupelo.string :as str]))
 
 (defn delete-all-movies! ; works, but could overflow jvm heap for large db's
   []
-  (unlazy (util/session-run "match (m:Movie) detach delete m;")))
+  (unlazy (neo4j/session-run "match (m:Movie) detach delete m;")))
 
 (defn create-movie
   [arg]
-  (unlazy (util/session-run "CREATE (m:Movie $Data)
+  (unlazy (neo4j/session-run "CREATE (m:Movie $Data)
                               return m as film" arg)))
 
 (defn get-all-movies
   []
-  (unlazy (util/session-run "MATCH (m:Movie) RETURN m as flick")))
+  (unlazy (neo4j/session-run "MATCH (m:Movie) RETURN m as flick")))
 
 (dotest   ; -focus
 
-  (util/with-driver
+  (neo4j/with-driver
     ; "bolt://localhost:7687" "neo4j" "secret"
     "neo4j+s://4ca9bb9b.databases.neo4j.io" "neo4j" "g6o2KIftFE6EIYMUCIY9a6DW0oVcwihh7m0Z5DP-jcY"
 
     (comment ; example
-      (newline) (spyx-pretty util/*neo4j-driver-map*)
+      (newline) (spyx-pretty neo4j/*neo4j-driver-map*)
       ; {:url        #object[java.net.URI 0x1d4d84fb "neo4j+s://4ca9bb9b.databases.neo4j.io"],
       ;  :user       "neo4j",
       ;  :password   "g6o2KIftFE6EIYMUCIY9a6DW0oVcwihh7m0Z5DP-jcY",
@@ -33,23 +33,23 @@
 
       )
 
-    (util/with-session
+    (neo4j/with-session
       (comment ; example
-        (newline) (spyx-pretty util/*neo4j-session*)
+        (newline) (spyx-pretty neo4j/*neo4j-session*)
         ; #object[org.neo4j.driver.internal.InternalSession 0x2eba393 "org.neo4j.driver.internal.InternalSession@2eba393"]
         )
 
-      (util/delete-all-nodes!)
-      (util/constraints-drop-all!)
-      (util/indexes-drop-all!)
+      (neo4j/delete-all-nodes!)
+      (neo4j/constraints-drop-all!)
+      (neo4j/indexes-drop-all!)
 
-      (is= 0 (count (util/nodes-all)))
+      (is= 0 (count (neo4j/nodes-all)))
 
       ; note return type :film set by "return ... as ..."
       (is= (create-movie {:Data {:title "The Matrix"}}) [{:film {:title "The Matrix"}}])
       (is= (create-movie {:Data {:title "Star Wars"}}) [{:film {:title "Star Wars"}}])
       (is= (create-movie {:Data {:title "Raiders"}}) [{:film {:title "Raiders"}}])
-      (is= 3 (count (spyx-pretty (util/nodes-all))))
+      (is= 3 (count (spyx-pretty (neo4j/nodes-all))))
 
       ; note return type :flick set by "return ... as ..."
       (is-set= (get-all-movies)
@@ -57,12 +57,12 @@
          {:flick {:title "Star Wars"}}
          {:flick {:title "Raiders"}}])
 
-      (is= [] (util/session-run "drop constraint cnstrUniqueMovieTitle if exists ;"))
-      (is= [] (util/session-run "drop constraint cnstrxUniqueMovieTitle if exists ;"))
+      (is= [] (neo4j/session-run "drop constraint cnstrUniqueMovieTitle if exists ;"))
+      (is= [] (neo4j/session-run "drop constraint cnstrxUniqueMovieTitle if exists ;"))
 
-      (is= [] (util/session-run "create constraint  cnstrxUniqueMovieTitle  if not exists
+      (is= [] (neo4j/session-run "create constraint  cnstrxUniqueMovieTitle  if not exists
                                    on (m:Movie) assert m.title is unique;"))
-      (let [indexes  (util/session-run "show indexes;")
+      (let [indexes  (neo4j/session-run "show indexes;")
             >> (spyx-pretty  indexes)
             constraints (vec (keep-if #(str/contains-str? (grab :name %) "Unique")
                            indexes))
@@ -99,7 +99,7 @@
          :entityType        "NODE",
          :labelsOrTypes     nil})
       (let [idxs-found (vec (keep-if #(= (grab :name %) "cnstrxUniqueMovieTitle")
-                              (util/session-run "show indexes;")))
+                              (neo4j/session-run "show indexes;")))
             >>         (spyx idxs-found)
             idx-ours   (only idxs-found)] ; there should be only 1
         (is (wild-match?
