@@ -12,21 +12,22 @@
     "neo4j" "secret")) ; user/pass
 
 (dotest   ; -focus
-  (util/with-connection
+  (util/with-driver
     "bolt://localhost:7687" "neo4j" "secret"
     ; "neo4j+s://4ca9bb9b.databases.neo4j.io" "neo4j" "g6o2KIftFE6EIYMUCIY9a6DW0oVcwihh7m0Z5DP-jcY"
 
-    (is= (util/neo4j-info) {:name "Neo4j Kernel" :version "4.3.3" :edition "enterprise"})
-    (is= (util/neo4j-version) "4.3.3")
-    (is= (util/apoc-version) "4.3.0.0")
-
-    ; deleted users in DB from previous run
-    (util/delete-all-nodes!)
-
-    (is (util/apoc-installed?))
-
     ; Using a session
     (util/with-session
+
+      (is= (util/neo4j-info) {:name "Neo4j Kernel" :version "4.3.3" :edition "enterprise"})
+      (is= (util/neo4j-version) "4.3.3")
+      (is= (util/apoc-version) "4.3.0.0")
+
+      ; deleted users in DB from previous run
+      (util/delete-all-nodes!)
+
+      (is (util/apoc-installed?))
+
       ; tests consume all output within the session lifetime, so don't need `doall`, `vec`, or `unlazy`
       (let [create-user-cmd "CREATE (u:User $User)  return u as newb"]
         (is= (util/session-run create-user-cmd {:User {:first-name "Luke" :last-name "Skywalker"}})
@@ -52,4 +53,3 @@
         (util/delete-all-nodes! driver)))
 
     ))
-

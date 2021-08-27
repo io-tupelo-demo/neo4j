@@ -10,7 +10,7 @@
     ))
 
 ; a neo4j connection map with the driver under `:db`
-(def ^:dynamic *neo4j-conn-map* nil) ; #todo add earmuffs
+(def ^:dynamic *neo4j-driver-map* nil) ; #todo add earmuffs
 
 ; a neo4j Session object
 (def ^:dynamic *neo4j-session* nil) ; #todo add earmuffs
@@ -19,23 +19,23 @@
 (def ^:dynamic *verbose* false) ; #todo add earmuffs
 
 ;-----------------------------------------------------------------------------
-(defn with-connection-impl
+(defn with-driver-impl
   [[uri user pass & forms]]
-  `(binding [demo.util/*neo4j-conn-map* (neolib/connect (URI. ~uri) ~user ~pass)]
-     (with-open [n4driver# (:db demo.util/*neo4j-conn-map*)]
+  `(binding [demo.util/*neo4j-driver-map* (neolib/connect (URI. ~uri) ~user ~pass)]
+     (with-open [n4driver# (:db demo.util/*neo4j-driver-map*)]
        ; (println :drvr-open-enter n4driver#)
        ~@forms
        ; (println :drvr-open-leave n4driver#)
        )))
 
-(defmacro with-connection
+(defmacro with-driver
   [& args]
-  (with-connection-impl args))
+  (with-driver-impl args))
 
 ;-----------------------------------------------------------------------------
 (defn with-session-impl
   [forms]
-  `(binding [demo.util/*neo4j-session* (neolib/get-session demo.util/*neo4j-conn-map*)]
+  `(binding [demo.util/*neo4j-session* (neolib/get-session demo.util/*neo4j-driver-map*)]
      (with-open [n4session# demo.util/*neo4j-session*]
        ; (println :sess-open-enter n4session#)
        ~@forms
@@ -53,11 +53,10 @@
 
 (s/defn neo4j-info :- tsk/KeyMap
   []
-  (with-session
-    (only (session-run
-            "call dbms.components() yield name, versions, edition
-             unwind versions as version
-             return name, version, edition ;"))))
+  (only (session-run
+          "call dbms.components() yield name, versions, edition
+           unwind versions as version
+           return name, version, edition ;")))
 
 (s/defn neo4j-version :- s/Str
   [] (grab :version (neo4j-info)))
@@ -65,8 +64,8 @@
 ;-----------------------------------------------------------------------------
 (defn ^:no-doc apoc-version-str-impl
   []
-  (with-session ; may throw if APOC not present
-    (grab :ApocVersion (only (session-run "return apoc.version() as ApocVersion;")))))
+  ; may throw if APOC not present
+  (grab :ApocVersion (only (session-run "return apoc.version() as ApocVersion;"))))
 
 (s/defn apoc-version :- s/Str
   "Returns the APOC version string, else `*** APOC not installed ***`"
@@ -87,27 +86,23 @@
 
 (s/defn nodes-all :- tsk/Vec
   []
-  (with-session
-    (vec (session-run "match (n) return n as node;"))))
+  (vec (session-run "match (n) return n as node;")))
 
 (s/defn indexes-all :- [tsk/KeyMap]
   []
-  (with-session
-    (let [indexes (vec  (session-run "show indexes;")) ; #todo all?
-          ]
-      indexes)))
+  (let [indexes (vec (session-run "show indexes;")) ; #todo all?
+        ]
+    indexes))
 
 (s/defn constraints-all :- [tsk/KeyMap]
   []
-  (with-session
-    (spyx (vec (session-run "show all constraints;")))))
+  (spyx (vec (session-run "show all constraints;"))))
 
 (s/defn constraint-drop!
   [cnstr-name]
-  (with-session
-    (let [cmd (format "drop constraint %s if exists" cnstr-name)]
-      (spyx cmd)
-      (session-run cmd))))
+  (let [cmd (format "drop constraint %s if exists" cnstr-name)]
+    (spyx cmd)
+    (session-run cmd)))
 
 (s/defn constraints-drop-all!
   []
@@ -120,21 +115,20 @@
   []
   (nl)
   (let [idxs-user (drop-if
-          (fn [idx-map]
-            (spyx idx-map)
-            (let [idx-name (grab :name idx-map)]
-              (str/contains-str? idx-name "__org_neo4j")))
-          (indexes-all))]
+                    (fn [idx-map]
+                      (spyx idx-map)
+                      (let [idx-name (grab :name idx-map)]
+                        (str/contains-str? idx-name "__org_neo4j")))
+                    (indexes-all))]
     (spyx-pretty idxs-user)
     )
   )
 
 (s/defn indexes-drop!
   [idx-name]
-  (with-session
-    (let [cmd (format "drop index %s if exists" idx-name)]
-      (spyx cmd)
-      (session-run cmd))))
+  (let [cmd (format "drop index %s if exists" idx-name)]
+    (spyx cmd)
+    (session-run cmd)))
 
 (s/defn indexes-drop-all!
   []
@@ -145,19 +139,17 @@
 
 (defn delete-all-nodes-simple! ; works, but could overflow jvm heap for large db's
   []
-  (with-session
-    (vec (session-run "match (n) detach delete n;"))))
+  (vec (session-run "match (n) detach delete n;")))
 
 (defn delete-all-nodes-apoc! ; APOC function works in batches - safe for large db's
   []
-  (with-session
-    (vec (session-run
-           (str/quotes->double
-             "call apoc.periodic.iterate( 'MATCH (n)  return n',
-                                          'DETACH DELETE n',
-                                          {batchSize:1000} )
-              yield  batches, total
-              return batches, total")))))
+  (vec (session-run
+         (str/quotes->double
+           "call apoc.periodic.iterate( 'MATCH (n)  return n',
+                                        'DETACH DELETE n',
+                                        {batchSize:1000} )
+            yield  batches, total
+            return batches, total"))))
 
 (defn delete-all-nodes!
   "Delete all nodes & edges in the graph.  Uses apoc.periodic.iterate() if installed."

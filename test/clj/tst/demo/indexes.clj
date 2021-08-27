@@ -17,14 +17,14 @@
   []
   (unlazy (util/session-run "MATCH (m:Movie) RETURN m as flick")))
 
-(dotest-focus
+(dotest   ; -focus
 
-  (util/with-connection
+  (util/with-driver
     ; "bolt://localhost:7687" "neo4j" "secret"
     "neo4j+s://4ca9bb9b.databases.neo4j.io" "neo4j" "g6o2KIftFE6EIYMUCIY9a6DW0oVcwihh7m0Z5DP-jcY"
 
     (comment ; example
-      (newline) (spyx-pretty util/*neo4j-conn-map*)
+      (newline) (spyx-pretty util/*neo4j-driver-map*)
       ; {:url        #object[java.net.URI 0x1d4d84fb "neo4j+s://4ca9bb9b.databases.neo4j.io"],
       ;  :user       "neo4j",
       ;  :password   "g6o2KIftFE6EIYMUCIY9a6DW0oVcwihh7m0Z5DP-jcY",

@@ -5,21 +5,22 @@
     [tupelo.string :as str]
     ))
 
-(dotest
-  (util/with-connection "bolt://localhost:7687" "neo4j" "secret"
+(dotest   ; -focus
+  (util/with-driver "bolt://localhost:7687" "neo4j" "secret"
+    (util/with-session
 
-    (let [vinfo (util/neo4j-info)]
-      ; example:  {:name "Neo4j Kernel", :version "4.2-aura", :edition "enterprise"}
-      (with-map-vals vinfo [name version edition]
-        (is= name "Neo4j Kernel")
-        (is= edition "enterprise")
-        (is (str/increasing-or-equal? "4.2" version))))
-    (is (util/apoc-installed?))
-    (is (str/increasing-or-equal? "4.2" (util/apoc-version)))
+      (let [vinfo (util/neo4j-info)]
+        ; example:  {:name "Neo4j Kernel", :version "4.2-aura", :edition "enterprise"}
+        (with-map-vals vinfo [name version edition]
+          (is= name "Neo4j Kernel")
+          (is= edition "enterprise")
+          (is (str/increasing-or-equal? "4.2" version))))
+      (is (util/apoc-installed?))
+      (is (str/increasing-or-equal? "4.2" (util/apoc-version)))
 
-    (is= (util/neo4j-info) {:name "Neo4j Kernel" :version "4.3.3" :edition "enterprise"})
-    (is= (util/neo4j-version)  "4.3.3")
-    (is= (util/apoc-version) "4.3.0.0")
+      (is= (util/neo4j-info) {:name "Neo4j Kernel" :version "4.3.3" :edition "enterprise"})
+      (is= (util/neo4j-version) "4.3.3")
+      (is= (util/apoc-version) "4.3.0.0"))
 
     ))
 
