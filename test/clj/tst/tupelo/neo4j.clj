@@ -3,8 +3,9 @@
   (:require
     [schema.core :as s]
     [tupelo.neo4j :as neo4j]
+    [tupelo.set :as set]
     [tupelo.string :as str]
-    [tupelo.set :as set]))
+    ))
 
 (s/defn db-names-all :- [s/Str]
   []
@@ -37,22 +38,28 @@
     (neo4j/with-session
       (drop-extraneous-dbs!)
 
+      ; "system" db is always present
+      ; "neo4j" db is default name
       (is-set= (db-names-all) #{"system" "neo4j"})
+
       (neo4j/session-run "create or replace database neo4j")
-      (neo4j/session-run "create or replace database SPRINGFIELD")
+      (neo4j/session-run "create or replace database SPRINGFIELD") ; make a new DB
       (is-set= (db-names-all) #{"system" "neo4j" "springfield"}) ; NOTE:  all lowercase
 
-      ; use default db ("neo4j")
+      ; use default db "neo4j"
       (neo4j/session-run "CREATE (u:Jedi $Hero)  return u as padawan"
         {:Hero {:first-name "Luke" :last-name "Skywalker"}})
       (is= (vec (neo4j/session-run "match (n) return n as Jedi "))
         [{:Jedi {:first-name "Luke", :last-name "Skywalker"}}])
 
-      ; use db "springfield" (always coerced to lowercase)
-      (neo4j/session-run
-        "use Springfield
-         create (u:user $Resident)  return u as newb"
-        {:Resident {:first-name "Homer" :last-name "Simpson"}})
+      ; use "springfield" db (always coerced to lowercase)
+      (is= (only
+             (neo4j/session-run
+               "use Springfield
+                create (u:user $Resident)  return u as Duffer"
+               {:Resident {:first-name "Homer" :last-name "Simpson"}}))
+        {:Duffer {:first-name "Homer", :last-name "Simpson"}})
+
       (is= (vec (neo4j/session-run "use Springfield
                                     match (n) return n as Dummy"))
         [{:Dummy {:first-name "Homer", :last-name "Simpson"}}])
