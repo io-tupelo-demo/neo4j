@@ -1,8 +1,8 @@
 (ns tst.demo.util
   (:use tupelo.core tupelo.test)
   (:require
-    [tupelo.string :as str]
     [demo.util :as util]
+    [tupelo.string :as str]
     ))
 
 (dotest
@@ -16,6 +16,11 @@
         (is (str/increasing-or-equal? "4.2" version))))
     (is (util/apoc-installed?))
     (is (str/increasing-or-equal? "4.2" (util/apoc-version)))
+
+    (is= (util/neo4j-info) {:name "Neo4j Kernel" :version "4.3.3" :edition "enterprise"})
+    (is= (util/neo4j-version)  "4.3.3")
+    (is= (util/apoc-version) "4.3.0.0")
+
     ))
 
 ;-----------------------------------------------------------------------------

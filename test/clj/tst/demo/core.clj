@@ -5,24 +5,13 @@
     [neo4j-clj.core :as db]
     [tupelo.string :as str])
   (:import
-    [java.net URI])
-)
+    [java.net URI]))
 
 (def driver
   (db/connect (URI. "bolt://localhost:7687")  ; uri
-              "neo4j"
-              "secret")); user/pass
+              "neo4j" "secret")); user/pass
 
-(db/defquery create-user ; creates a global Var function, taking a session or tx as 1st arg
-             "CREATE (u:User $User) 
-              return u as newb"
-  )
-
-(db/defquery get-all-users ; creates a global Var function, taking a session or tx as 1st arg
-             "MATCH (u:User) 
-              RETURN u as UZZER")
-
-(dotest-focus
+(dotest   ; -focus
   (util/with-connection
     "bolt://localhost:7687" "neo4j" "secret"
     ; "neo4j+s://4ca9bb9b.databases.neo4j.io" "neo4j" "g6o2KIftFE6EIYMUCIY9a6DW0oVcwihh7m0Z5DP-jcY"
