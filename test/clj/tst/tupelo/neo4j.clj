@@ -12,17 +12,15 @@
     (neo4j/with-session
 
       (let [vinfo (neo4j/neo4j-info)]
-        ; example:  {:name "Neo4j Kernel", :version "4.2-aura", :edition "enterprise"}
+        ; example:  {:name "Neo4j Kernel" :version "4.2-aura" :edition "enterprise"}
+        ; example:  {:name "Neo4j Kernel" :version "4.3.3" :edition "enterprise"}
         (with-map-vals vinfo [name version edition]
           (is= name "Neo4j Kernel")
           (is= edition "enterprise")
           (is (str/increasing-or-equal? "4.2" version))))
+      (is (str/increasing-or-equal? "4.2" (neo4j/neo4j-version)))
       (is (neo4j/apoc-installed?))
-      (is (str/increasing-or-equal? "4.2" (neo4j/apoc-version)))
-
-      (is= (neo4j/neo4j-info) {:name "Neo4j Kernel" :version "4.3.3" :edition "enterprise"})
-      (is= (neo4j/neo4j-version) "4.3.3")
-      (is= (neo4j/apoc-version) "4.3.0.0"))
+      (is (str/increasing-or-equal? "4.2" (neo4j/apoc-version))))
 
     (neo4j/with-session
       (neo4j/drop-extraneous-dbs!)
@@ -33,6 +31,8 @@
 
       (neo4j/session-run "create or replace database neo4j")
       (neo4j/session-run "create or replace database SPRINGFIELD") ; make a new DB
+      ; NOTE: For some reason cannot get `.` (dot) to work in name. Underscore `_` is illegal for DB name
+
       (is-set= (neo4j/db-names-all) #{"system" "neo4j" "springfield"}) ; NOTE:  all lowercase
 
       ; use default db "neo4j"
@@ -41,19 +41,18 @@
       (is= (vec (neo4j/session-run "match (n) return n as Jedi "))
         [{:Jedi {:first-name "Luke", :last-name "Skywalker"}}])
 
-      ; use "springfield" db (always coerced to lowercase)
+      ; use "springfield" db (always coerced to lowercase by neo4j)
       (is= (only
-             (neo4j/session-run
-               "use Springfield
-                create (p:Person $Resident) return p as Duffer"
+             (neo4j/session-run "use Springfield
+                                 create (p:Person $Resident) return p as Duffer"
                {:Resident {:first-name "Homer" :last-name "Simpson"}}))
         {:Duffer {:first-name "Homer", :last-name "Simpson"}})
 
-      (is= (vec (neo4j/session-run "use Springfield
+      (is= (vec (neo4j/session-run "use SPRINGFIELD
                                     match (n) return n as Dummy"))
         [{:Dummy {:first-name "Homer", :last-name "Simpson"}}])
-      (neo4j/session-run "drop database SPRINGFIELD if exists"))
 
+      (neo4j/session-run "drop database SpringField if exists"))
     ))
 
 ;-----------------------------------------------------------------------------

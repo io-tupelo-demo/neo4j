@@ -1,11 +1,10 @@
 (ns tst.demo.core
-  (:use demo.core tupelo.core tupelo.test)
+  (:use tupelo.core tupelo.test)
   (:require
-    [neo4j-clj.core :as db]
     [tupelo.neo4j :as neo4j]
-    [tupelo.string :as str])
-  (:import
-    [java.net URI]))
+    [tupelo.set :as set]
+    [tupelo.string :as str]
+    ))
 
 (dotest   ; -focus
   (neo4j/with-driver  ; this is URI/username/password (not uri/db/pass!)
@@ -14,13 +13,13 @@
 
     ; Using a session
     (neo4j/with-session
+      (neo4j/drop-extraneous-dbs!)
+      (neo4j/session-run "create or replace database neo4j") ; drop/recreate default db
 
       (is= (neo4j/neo4j-info) {:name "Neo4j Kernel" :version "4.3.3" :edition "enterprise"})
       (is= (neo4j/neo4j-version) "4.3.3")
       (is= (neo4j/apoc-version) "4.3.0.0")
 
-      ; deleted users in DB from previous run
-      (neo4j/delete-all-nodes!)
 
       (is (neo4j/apoc-installed?))
 
@@ -32,20 +31,14 @@
           [{:newb {:first-name "Leia" :last-name "Organa"}}])
         (is= (neo4j/session-run create-user-cmd {:User {:first-name "Anakin" :last-name "Skywalker"}})
           [{:newb {:first-name "Anakin" :last-name "Skywalker"}}])
-        (is= 3 (count (neo4j/nodes-all)))))
+        (is= 3 (count (neo4j/nodes-all))))
 
-    (comment
-      ; Using a transaction
-      (let [get-all-users-cmd "MATCH (u:User)  RETURN u as UZZER"
-            result            (neo4j/with-session
-                                (unlazy ; or vec/doall to realize output within session life
-                                  (neo4j/session-run get-all-users-cmd)))]
-        (is= result
-          [{:UZZER {:first-name "Luke" :last-name "Skywalker"}}
-           {:UZZER {:first-name "Leia" :last-name "Organa"}}
-           {:UZZER {:first-name "Anakin" :last-name "Skywalker"}}]))
+      (is= (vec (neo4j/session-run "MATCH (u:User)  RETURN u as Jedi"))
+        [{:Jedi {:first-name "Luke" :last-name "Skywalker"}}
+         {:Jedi {:first-name "Leia" :last-name "Organa"}}
+         {:Jedi {:first-name "Anakin" :last-name "Skywalker"}}])
 
-      (is= [{:batches 1 :total 3}] ; delete all users from DB via APOC
-        (neo4j/delete-all-nodes! )))
+      (is= (neo4j/delete-all-nodes!) ; delete all users from DB via APOC
+        [{:batches 1 :total 3}]))
 
     ))
