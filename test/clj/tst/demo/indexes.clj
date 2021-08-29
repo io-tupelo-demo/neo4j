@@ -41,19 +41,18 @@
          {:flick {:title "Raiders"}}])
 
       (is= [] (neo4j/run "drop constraint cnstr_UniqueMovieTitle if exists ;"))
-
       (is= [] (neo4j/run "create constraint  cnstr_UniqueMovieTitle  if not exists
-                                   on (m:Movie) assert m.title is unique;"))
-
+                            on (m:Movie) assert m.title is unique;"))
       (is (submap?
             {:entityType    "NODE",
              :labelsOrTypes ["Movie"],
              :name          "cnstr_UniqueMovieTitle",
              :properties    ["title"],
              :type          "UNIQUENESS"}
-            (unlazy (only (neo4j/constraints-all)))))
+            (only (neo4j/constraints-all))))
 
-      ; (throws? (create-movie {:Data {:title "Raiders"}})) ; duplicate title
+      ; verify throws if duplicate title
+      (throws? (create-movie {:Data {:title "Raiders"}}))
 
       ;(is= []
       ;  (util/session-run
