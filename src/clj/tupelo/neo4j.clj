@@ -29,7 +29,7 @@
 (def ^:dynamic *verbose* false) ; #todo add earmuffs
 
 ;-----------------------------------------------------------------------------
-(defn with-driver-impl
+(defn ^:no-doc with-driver-impl
   [[uri user pass & forms]]
   `(binding [tupelo.neo4j/*neo4j-driver-map* (neolib/connect (URI. ~uri) ~user ~pass)]
      (with-open [n4driver# (:db tupelo.neo4j/*neo4j-driver-map*)]
@@ -38,11 +38,12 @@
        (when *verbose* (spy :with-driver-impl--leave n4driver#)))))
 
 (defmacro with-driver
-  [& args]
-  (with-driver-impl args))
+  "Creates a Neo4j driver (cached as `*neo4j-driver-map*`) for use by the enclosed forms."
+  [uri user pass & forms]
+  (with-driver-impl (prepend uri user pass forms)))
 
 ;-----------------------------------------------------------------------------
-(defn with-session-impl
+(defn ^:no-doc with-session-impl
   [forms]
   `(binding [tupelo.neo4j/*neo4j-session* (neolib/get-session tupelo.neo4j/*neo4j-driver-map*)]
      (with-open [n4session# tupelo.neo4j/*neo4j-session*]
@@ -51,68 +52,70 @@
        (when *verbose* (spy :sess-open-leave--leave n4session#)))))
 
 (defmacro with-session
+  "Creates a Neo4j session object (cached as `*neo4j-session*`) for use by the enclosed forms.
+  Must be enclosed by a `(with-driver ...)` form."
   [& args]
   (with-session-impl args))
 
 ;-----------------------------------------------------------------------------
-(s/defn session-run :- tsk/Vec
-  "Within the context of `(with-session ...)`, run a neo4j cypher command."
+(s/defn run :- tsk/Vec
+  "Runs a neo4j cypher command.  Must be enclosed by a `(with-session ...)` form."
   [query & args] (apply neolib/execute tupelo.neo4j/*neo4j-session* query args))
 
-(s/defn neo4j-info :- tsk/KeyMap
+(s/defn info-map :- tsk/KeyMap
   []
-  (only (session-run
+  (only (run
           "call dbms.components() yield name, versions, edition
            unwind versions as version
            return name, version, edition ;")))
 
 (s/defn neo4j-version :- s/Str
-  [] (grab :version (neo4j-info)))
+  [] (grab :version (info-map)))
 
 ;-----------------------------------------------------------------------------
-(defn ^:no-doc apoc-version-str-impl
+(s/defn ^:no-doc apoc-version-impl :- s/Str
   []
   ; may throw if APOC not present
-  (grab :ApocVersion (only (session-run "return apoc.version() as ApocVersion;"))))
+  (grab :ApocVersion (only (run "return apoc.version() as ApocVersion;"))))
 
 (s/defn apoc-version :- s/Str
   "Returns the APOC version string, else `*** APOC not installed ***`"
   []
   (try
-    (apoc-version-str-impl)
+    (apoc-version-impl)
     (catch Exception <>
       "*** APOC not installed ***")))
 
 (s/defn apoc-installed? :- s/Bool
   []
   (try
-    (let [version-str (apoc-version-str-impl)]
+    (let [version-str (apoc-version-impl)]
       ; didn't throw, check version
       (str/increasing-or-equal? "4.0" version-str))
     (catch Exception <>
-      false))) ; threw, so assume not installed
+      false))) ; it threw, so assume not installed
 
 (s/defn nodes-all :- tsk/Vec
-  [] (vec (session-run "match (n) return n as node;")))
+  [] (vec (run "match (n) return n as node;")))
 
 ;-----------------------------------------------------------------------------
 (s/defn db-names-all :- [s/Str]
   []
-  (mapv #(grab :name %) (session-run "show databases")))
+  (mapv #(grab :name %) (run "show databases")))
 
 (s/defn drop-extraneous-dbs! :- [s/Str]
   []
   (let [keep-db-names #{"system" "neo4j"} ; never delete these DBs!
         drop-db-names (set/difference (set (db-names-all)) keep-db-names)]
     (doseq [db-name drop-db-names]
-      (session-run (format "drop database %s if exists" db-name)))))
+      (run (format "drop database %s if exists" db-name)))))
 
 ;-----------------------------------------------------------------------------
 (s/defn indexes-all :- [tsk/KeyMap]
-  [] (vec (session-run "show indexes;")))
+  [] (vec (run "show indexes;")))
 
 ; Identifies an Neo4j internal index
-(def org-neo4j-prefix "__org_neo4j")
+(def ^:no-doc org-neo4j-prefix "__org_neo4j")
 (s/defn indexes-user :- [tsk/KeyMap]
   [] (drop-if #(str/contains-str? (grab :name %) org-neo4j-prefix)
        (indexes-all)))
@@ -120,7 +123,7 @@
 (s/defn indexes-drop!
   [idx-name]
   (let [cmd (format "drop index %s if exists" idx-name)]
-    (session-run cmd)))
+    (run cmd)))
 
 (s/defn indexes-drop-all!
   []
@@ -130,13 +133,13 @@
 
 ;-----------------------------------------------------------------------------
 (s/defn constraints-all :- [tsk/KeyMap]
-  [] (vec (session-run "show all constraints;")))
+  [] (vec (run "show all constraints;")))
 
 (s/defn constraint-drop!
   [cnstr-name]
   (let [cmd (format "drop constraint %s if exists" cnstr-name)]
     (spyx cmd)
-    (session-run cmd)))
+    (run cmd)))
 
 (s/defn constraints-drop-all!
   []
@@ -148,11 +151,11 @@
 ;-----------------------------------------------------------------------------
 (defn delete-all-nodes-simple! ; works, but could overflow jvm heap for large db's
   []
-  (vec (session-run "match (n) detach delete n;")))
+  (vec (run "match (n) detach delete n;")))
 
 (defn delete-all-nodes-apoc! ; APOC function works in batches - safe for large db's
   []
-  (vec (session-run
+  (vec (run
          (str/quotes->double
            "call apoc.periodic.iterate( 'MATCH (n)  return n',
                                         'DETACH DELETE n',

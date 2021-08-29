@@ -11,7 +11,7 @@
   (neo4j/with-driver "bolt://localhost:7687" "neo4j" "secret" ; url/username/password
     (neo4j/with-session
 
-      (let [vinfo (neo4j/neo4j-info)]
+      (let [vinfo (neo4j/info-map)]
         ; example:  {:name "Neo4j Kernel" :version "4.2-aura" :edition "enterprise"}
         ; example:  {:name "Neo4j Kernel" :version "4.3.3" :edition "enterprise"}
         (with-map-vals vinfo [name version edition]
@@ -29,30 +29,30 @@
       ; "neo4j" db is default name
       (is-set= (neo4j/db-names-all) #{"system" "neo4j"})
 
-      (neo4j/session-run "create or replace database neo4j") ; drop/recreate default db
-      (neo4j/session-run "create or replace database SPRINGFIELD") ; make a new DB
+      (neo4j/run "create or replace database neo4j") ; drop/recreate default db
+      (neo4j/run "create or replace database SPRINGFIELD") ; make a new DB
       ; NOTE: For some reason cannot get `.` (dot) to work in name. Underscore `_` is illegal for DB name
 
       (is-set= (neo4j/db-names-all) #{"system" "neo4j" "springfield"}) ; NOTE:  all lowercase
 
       ; use default db "neo4j"
-      (neo4j/session-run "CREATE (u:Jedi $Hero)  return u as padawan"
+      (neo4j/run "CREATE (u:Jedi $Hero)  return u as padawan"
         {:Hero {:first-name "Luke" :last-name "Skywalker"}})
-      (is= (vec (neo4j/session-run "match (n) return n as Jedi "))
+      (is= (vec (neo4j/run "match (n) return n as Jedi "))
         [{:Jedi {:first-name "Luke", :last-name "Skywalker"}}])
 
       ; use "springfield" db (always coerced to lowercase by neo4j)
       (is= (only
-             (neo4j/session-run "use Springfield
+             (neo4j/run "use Springfield
                                  create (p:Person $Resident) return p as Duffer"
                {:Resident {:first-name "Homer" :last-name "Simpson"}}))
         {:Duffer {:first-name "Homer", :last-name "Simpson"}})
 
-      (is= (vec (neo4j/session-run "use SPRINGFIELD
+      (is= (vec (neo4j/run "use SPRINGFIELD
                                     match (n) return n as Dummy"))
         [{:Dummy {:first-name "Homer", :last-name "Simpson"}}])
 
-      (neo4j/session-run "drop database SpringField if exists"))
+      (neo4j/run "drop database SpringField if exists"))
     ))
 
 ;-----------------------------------------------------------------------------
@@ -69,7 +69,7 @@
     (with-connection "bolt://localhost:7687" "neo4j"
       "secret"
       ; (println :aa NEOCONN )
-      (println :version (neo4j/neo4j-info *neo4j-conn-map*))
+      (println :version (neo4j/info-map *neo4j-conn-map*))
       ; (println :zz NEOCONN )
       ))
 

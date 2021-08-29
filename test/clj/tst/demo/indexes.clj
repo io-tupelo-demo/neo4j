@@ -6,11 +6,11 @@
 
 (defn create-movie
   [params]
-  (vec (neo4j/session-run "CREATE (m:Movie $Data)
+  (vec (neo4j/run "CREATE (m:Movie $Data)
                            return m as film" params)))
 
 (defn get-all-movies
-  [] (vec (neo4j/session-run "MATCH (m:Movie) RETURN m as flick")))
+  [] (vec (neo4j/run "MATCH (m:Movie) RETURN m as flick")))
 
 (dotest   ; -focus
   (neo4j/with-driver  ; this is URI/username/password (not uri/db/pass!)
@@ -19,7 +19,7 @@
 
     (neo4j/with-session
       (neo4j/drop-extraneous-dbs!)
-      (neo4j/session-run "create or replace database neo4j") ; drop/recreate default db
+      (neo4j/run "create or replace database neo4j") ; drop/recreate default db
 
       (comment
         (neo4j/delete-all-nodes!)
@@ -40,9 +40,9 @@
          {:flick {:title "Star Wars"}}
          {:flick {:title "Raiders"}}])
 
-      (is= [] (neo4j/session-run "drop constraint cnstr_UniqueMovieTitle if exists ;"))
+      (is= [] (neo4j/run "drop constraint cnstr_UniqueMovieTitle if exists ;"))
 
-      (is= [] (neo4j/session-run "create constraint  cnstr_UniqueMovieTitle  if not exists
+      (is= [] (neo4j/run "create constraint  cnstr_UniqueMovieTitle  if not exists
                                    on (m:Movie) assert m.title is unique;"))
 
       (is (submap?
@@ -89,7 +89,7 @@
               idx-ours)))
 
       ; works, but could overflow jvm heap for large db's
-      (vec (neo4j/session-run "match (m:Movie) detach delete m;"))
+      (vec (neo4j/run "match (m:Movie) detach delete m;"))
 
       )))
 
