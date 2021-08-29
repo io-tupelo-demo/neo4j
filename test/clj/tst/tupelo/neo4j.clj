@@ -29,7 +29,7 @@
       ; "neo4j" db is default name
       (is-set= (neo4j/db-names-all) #{"system" "neo4j"})
 
-      (neo4j/session-run "create or replace database neo4j")
+      (neo4j/session-run "create or replace database neo4j") ; drop/recreate default db
       (neo4j/session-run "create or replace database SPRINGFIELD") ; make a new DB
       ; NOTE: For some reason cannot get `.` (dot) to work in name. Underscore `_` is illegal for DB name
 

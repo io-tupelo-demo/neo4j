@@ -111,14 +111,11 @@
 (s/defn indexes-all :- [tsk/KeyMap]
   [] (vec (session-run "show indexes;")))
 
+; Identifies an Neo4j internal index
+(def org-neo4j-prefix "__org_neo4j")
 (s/defn indexes-user :- [tsk/KeyMap]
-  []
-  (let [idxs-user (drop-if
-                    (fn [idx-map]
-                      (let [idx-name (grab :name idx-map)]
-                        (str/contains-str? idx-name "__org_neo4j")))
-                    (indexes-all))]
-    idxs-user))
+  [] (drop-if #(str/contains-str? (grab :name %) org-neo4j-prefix)
+       (indexes-all)))
 
 (s/defn indexes-drop!
   [idx-name]
