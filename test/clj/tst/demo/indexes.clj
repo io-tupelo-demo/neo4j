@@ -58,19 +58,19 @@
       ;  (util/session-run
       ;    "create index  idxMovieTitle  if not exists
       ;                   for (m:Movie) on (m.title);"))
+
+      ; Sometimes (neo4j linux!) extraneous indexes are also returned
+      ; We need to filter them out before performing the test
       (comment
-        ; Sometimes (neo4j linux!) extraneous indexes are also returned
-        ; We need to filter them out before performing the test
-        {:properties        nil,
-         :populationPercent 100.0,
-         :name
-                            "__org_neo4j_schema_index_label_scan_store_converted_to_token_index",
-         :type              "LOOKUP",
-         :state             "ONLINE",
-         :uniqueness        "NONUNIQUE",
-         :id                1,
-         :indexProvider     "token-lookup-1.0",
-         :entityType        "NODE",
+        {:properties        nil
+         :populationPercent 100.0
+         :name              "__org_neo4j_schema_index_label_scan_store_converted_to_token_index"
+         :type              "LOOKUP"
+         :state             "ONLINE"
+         :uniqueness        "NONUNIQUE"
+         :id                1
+         :indexProvider     "token-lookup-1.0"
+         :entityType        "NODE"
          :labelsOrTypes     nil})
       (let [idx-ours (only (keep-if #(= (grab :name %) "cnstr_UniqueMovieTitle")
                              (neo4j/indexes-user)))] ; there should be only 1
