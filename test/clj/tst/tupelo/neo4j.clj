@@ -55,6 +55,51 @@
       (neo4j/run "drop database SpringField if exists"))
     ))
 
+(comment
+  (neo4j/delete-all-nodes!)
+  (neo4j/constraints-drop-all!)
+  (neo4j/indexes-drop-all!))
+
+(dotest-focus
+  (let [idx-normal     {:properties        (quote ("title"))
+                        :populationPercent 0.0
+                        :name              "idx_MovieTitle"
+                        :type              "BTREE"
+                        :state             "POPULATING"
+                        :uniqueness        "NONUNIQUE"
+                        :id                3
+                        :indexProvider     "native-btree-1.0"
+                        :entityType        "NODE"
+                        :labelsOrTypes     (quote ("Movie"))}
+        idx-extraneous {:entityType        "NODE"
+                        :id                1
+                        :indexProvider     "token-lookup-1.0"
+                        :labelsOrTypes     nil
+                        :name              "index_343aff4e"
+                        :populationPercent 100.0
+                        :properties        nil
+                        :state             "ONLINE"
+                        :type              "LOOKUP"
+                        :uniqueness        "NONUNIQUE"}
+        idx-internal {:properties        nil
+                      :populationPercent 100.0
+                      :name              "__org_neo4j_schema_index_label_scan_store_converted_to_token_index"
+                      :type              "LOOKUP"
+                      :state             "ONLINE"
+                      :uniqueness        "NONUNIQUE"
+                      :id                1
+                      :indexProvider     "token-lookup-1.0"
+                      :entityType        "NODE"
+                      :labelsOrTypes     nil}
+        idxs-norm-ext-int [idx-normal idx-extraneous idx-internal]
+        ]
+    (is= [false true true] (mapv neo4j/extraneous-index? idxs-norm-ext-int))
+    (is= [false false true] (mapv neo4j/internal-index? idxs-norm-ext-int))
+    (is= [true false false] (mapv neo4j/user-index? idxs-norm-ext-int))
+
+    )
+  )
+
 ;-----------------------------------------------------------------------------
 #_(dotest
     (spy-pretty :impl

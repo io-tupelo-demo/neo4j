@@ -12,7 +12,7 @@
 (defn get-all-movies
   [] (vec (neo4j/run "MATCH (m:Movie) RETURN m as flick")))
 
-(dotest   ; -focus
+(dotest-focus
   (neo4j/with-driver  ; this is URI/username/password (not uri/db/pass!)
     "bolt://localhost:7687" "neo4j" "secret"
     ; "neo4j+s://4ca9bb9b.databases.neo4j.io" "neo4j" "g6o2KIftFE6EIYMUCIY9a6DW0oVcwihh7m0Z5DP-jcY"
@@ -21,12 +21,10 @@
       (neo4j/drop-extraneous-dbs!)
       (neo4j/run "create or replace database neo4j") ; drop/recreate default db
 
-      (comment
-        (neo4j/delete-all-nodes!)
-        (neo4j/constraints-drop-all!)
-        (neo4j/indexes-drop-all!))
-
       (is= 0 (count (neo4j/nodes-all)))
+
+      (nl)
+      (spyx-pretty :aaa (vec (neo4j/indexes-user)))
 
       ; note return type :film set by "return ... as ..."
       (is= (create-movie {:Data {:title "The Matrix"}}) [{:film {:title "The Matrix"}}])
@@ -40,6 +38,7 @@
          {:flick {:title "Star Wars"}}
          {:flick {:title "Raiders"}}])
 
+      (when false
       (is= [] (neo4j/run "drop constraint cnstr_UniqueMovieTitle if exists ;"))
       (is= [] (neo4j/run "create constraint  cnstr_UniqueMovieTitle  if not exists
                             on (m:Movie) assert m.title is unique;"))
@@ -53,11 +52,6 @@
 
       ; verify throws if duplicate title
       (throws? (create-movie {:Data {:title "Raiders"}}))
-
-      ;(is= []
-      ;  (util/session-run
-      ;    "create index  idxMovieTitle  if not exists
-      ;                   for (m:Movie) on (m.title);"))
 
       ; Sometimes (neo4j linux!) extraneous indexes are also returned
       ; We need to filter them out before performing the test
@@ -86,6 +80,18 @@
                :type              "BTREE"
                :uniqueness        "UNIQUE"}
               idx-ours)))
+      )
+
+      (nl)
+      (spyx-pretty :bbb (vec (neo4j/indexes-user)))
+      (nl)
+      (is= []
+        (vec (neo4j/run
+               "create index  idx_MovieTitle  if not exists
+                              for (m:Movie) on (m.title);")))
+      (nl)
+      (spyx-pretty :ccc (vec (neo4j/indexes-user)))
+
 
       ; works, but could overflow jvm heap for large db's
       (vec (neo4j/run "match (m:Movie) detach delete m;"))

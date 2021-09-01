@@ -116,9 +116,28 @@
 
 ; Identifies an Neo4j internal index
 (def ^:no-doc org-neo4j-prefix "__org_neo4j")
+(s/defn ^:no-doc internal-index? :- s/Bool
+  "Identifies extraneous indexes (neo4j linux!) are also returned. See unit test for example"
+  [idx-map :- tsk/KeyMap]
+  (str/contains-str? (grab :name idx-map) org-neo4j-prefix))
+
+(s/defn ^:no-doc extraneous-index? :- s/Bool
+  "Identifies extraneous indexes which can exist even in a newly-created, empty db. See unit test for example "
+  [idx-map :- tsk/KeyMap]
+  (or
+    (nil? (grab :labelsOrTypes idx-map))
+    (nil? (grab :properties idx-map))))
+
+(s/defn ^:no-doc user-index? :- s/Bool
+  "A user-created index (not Neo4j-created). See unit test for example "
+  [idx-map :- tsk/KeyMap]
+  (not (or
+         (internal-index? idx-map)
+         (extraneous-index? idx-map))))
+
 (s/defn indexes-user :- [tsk/KeyMap]
-  [] (drop-if #(str/contains-str? (grab :name %) org-neo4j-prefix)
-       (indexes-all)))
+  []
+  (keep-if #(user-index? %) (indexes-all)))
 
 (s/defn indexes-drop!
   [idx-name]
