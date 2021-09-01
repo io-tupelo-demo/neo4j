@@ -24,7 +24,7 @@
       (is= 0 (count (neo4j/nodes-all)))
 
       (nl)
-      (spyx-pretty :aaa (vec (neo4j/indexes-user)))
+      (spyx-pretty :aaa (vec (neo4j/indexes-user-details)))
 
       ; note return type :film set by "return ... as ..."
       (is= (create-movie {:Data {:title "The Matrix"}}) [{:film {:title "The Matrix"}}])
@@ -38,59 +38,59 @@
          {:flick {:title "Star Wars"}}
          {:flick {:title "Raiders"}}])
 
-      (when false
-      (is= [] (neo4j/run "drop constraint cnstr_UniqueMovieTitle if exists ;"))
-      (is= [] (neo4j/run "create constraint  cnstr_UniqueMovieTitle  if not exists
+      (when true
+        (is= [] (neo4j/run "drop constraint cnstr_UniqueMovieTitle if exists ;"))
+        (is= [] (neo4j/run "create constraint  cnstr_UniqueMovieTitle  if not exists
                             on (m:Movie) assert m.title is unique;"))
-      (is (submap?
-            {:entityType    "NODE",
-             :labelsOrTypes ["Movie"],
-             :name          "cnstr_UniqueMovieTitle",
-             :properties    ["title"],
-             :type          "UNIQUENESS"}
-            (only (neo4j/constraints-all))))
+        (is (submap?
+              {:entityType    "NODE",
+               :labelsOrTypes ["Movie"],
+               :name          "cnstr_UniqueMovieTitle",
+               :properties    ["title"],
+               :type          "UNIQUENESS"}
+              (only (neo4j/constraints-all))))
 
-      ; verify throws if duplicate title
-      (throws? (create-movie {:Data {:title "Raiders"}}))
+        ; verify throws if duplicate title
+        (throws? (create-movie {:Data {:title "Raiders"}}))
 
-      ; Sometimes (neo4j linux!) extraneous indexes are also returned
-      ; We need to filter them out before performing the test
-      (comment
-        {:properties        nil
-         :populationPercent 100.0
-         :name              "__org_neo4j_schema_index_label_scan_store_converted_to_token_index"
-         :type              "LOOKUP"
-         :state             "ONLINE"
-         :uniqueness        "NONUNIQUE"
-         :id                1
-         :indexProvider     "token-lookup-1.0"
-         :entityType        "NODE"
-         :labelsOrTypes     nil})
-      (let [idx-ours (only (keep-if #(= (grab :name %) "cnstr_UniqueMovieTitle")
-                             (neo4j/indexes-user)))] ; there should be only 1
-        (is (wild-match?
-              {:entityType        "NODE"
-               :id                :*
-               :indexProvider     "native-btree-1.0"
-               :labelsOrTypes     ["Movie"]
-               :name              "cnstr_UniqueMovieTitle"
-               :populationPercent 100.0
-               :properties        ["title"]
-               :state             "ONLINE"
-               :type              "BTREE"
-               :uniqueness        "UNIQUE"}
-              idx-ours)))
-      )
+        ; Sometimes (neo4j linux!) extraneous indexes are also returned
+        ; We need to filter them out before performing the test
+        (comment
+          {:properties        nil
+           :populationPercent 100.0
+           :name              "__org_neo4j_schema_index_label_scan_store_converted_to_token_index"
+           :type              "LOOKUP"
+           :state             "ONLINE"
+           :uniqueness        "NONUNIQUE"
+           :id                1
+           :indexProvider     "token-lookup-1.0"
+           :entityType        "NODE"
+           :labelsOrTypes     nil})
+        (let [idx-ours (only (keep-if #(= (grab :name %) "cnstr_UniqueMovieTitle")
+                               (neo4j/indexes-user-details)))] ; there should be only 1
+          (is (wild-match?
+                {:entityType        "NODE"
+                 :id                :*
+                 :indexProvider     "native-btree-1.0"
+                 :labelsOrTypes     ["Movie"]
+                 :name              "cnstr_UniqueMovieTitle"
+                 :populationPercent 100.0
+                 :properties        ["title"]
+                 :state             "ONLINE"
+                 :type              "BTREE"
+                 :uniqueness        "UNIQUE"}
+                idx-ours)))
+        )
 
       (nl)
-      (spyx-pretty :bbb (vec (neo4j/indexes-user)))
+      (spyx-pretty :bbb (vec (neo4j/indexes-user-details)))
       (nl)
       (is= []
         (vec (neo4j/run
                "create index  idx_MovieTitle  if not exists
                               for (m:Movie) on (m.title);")))
       (nl)
-      (spyx-pretty :ccc (vec (neo4j/indexes-user)))
+      (spyx-pretty :ccc (vec (neo4j/indexes-user-details)))
 
 
       ; works, but could overflow jvm heap for large db's

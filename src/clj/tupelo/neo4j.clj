@@ -111,9 +111,6 @@
       (run (format "drop database %s if exists" db-name)))))
 
 ;-----------------------------------------------------------------------------
-(s/defn indexes-all :- [tsk/KeyMap]
-  [] (vec (run "show indexes;")))
-
 ; Identifies an Neo4j internal index
 (def ^:no-doc org-neo4j-prefix "__org_neo4j")
 (s/defn ^:no-doc internal-index? :- s/Bool
@@ -135,9 +132,16 @@
          (internal-index? idx-map)
          (extraneous-index? idx-map))))
 
-(s/defn indexes-user :- [tsk/KeyMap]
+(s/defn indexes-all-details :- [tsk/KeyMap]
+  [] (vec (run "show indexes;")))
+
+(s/defn indexes-user-details :- [tsk/KeyMap]
   []
-  (keep-if #(user-index? %) (indexes-all)))
+  (keep-if #(user-index? %) (indexes-all-details)))
+
+(s/defn indexes-user :- [s/Str]
+  []
+  (mapv #(grab :name %) (indexes-user-details)))
 
 (s/defn indexes-drop!
   [idx-name]
@@ -146,7 +150,7 @@
 
 (s/defn indexes-drop-all!
   []
-  (doseq [idx-map (indexes-user)]
+  (doseq [idx-map (indexes-user-details)]
     (let [idx-name (grab :name idx-map)]
       (indexes-drop! idx-name))))
 
