@@ -1,32 +1,17 @@
 (ns neo4j-clj.in-memory
   "This namespace contains the logic to connect to JVM-local in-memory Neo4j
   instances, esp. for testing."
+  (:use tupelo.core)
   (:require
-    [clojure.java.io :as io]
     [neo4j-clj.compatibility :refer [neo4j->clj clj->neo4j]]
     [neo4j-clj.core :refer [connect]]
     [tupelo.profile :as prof]
     )
   (:import
-    [java.net ServerSocket]
     [java.util.logging Level]
     [org.neo4j.driver.internal.logging ConsoleLogging]
     [org.neo4j.harness Neo4jBuilders Neo4j]
     ))
-
-;; In-memory for testing
-
-(defn- get-free-port []
-  (let [socket (ServerSocket. 0)
-        port (.getLocalPort socket)]
-    (.close socket)
-    port))
-
-(defn- create-temp-uri
-  "In-memory databases need an uri to communicate with the bolt driver.
-  Therefore, we need to get a free port."
-  []
-  (str "localhost:" (get-free-port)))
 
 (defn- in-memory-db
   "In order to store temporary large graphs, the embedded Neo4j database uses a
@@ -43,7 +28,6 @@
   _All_ data will be wiped after shutting down the db!"
   []
   (prof/with-timer-print :create-in-memory-connection
-    (let [url       (create-temp-uri)
-          ^Neo4j db (in-memory-db)]
+    (let [^Neo4j db (in-memory-db)]
       (merge (connect (.boltURI db) {:logging (ConsoleLogging. Level/WARNING)})
         {:destroy-fn #(.close db)}))))

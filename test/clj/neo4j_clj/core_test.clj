@@ -1,10 +1,14 @@
 (ns neo4j-clj.core-test
-  (:require [clojure.test :refer :all]
-            [neo4j-clj.core :refer [defquery disconnect get-session execute with-transaction with-retry]]
-            [neo4j-clj.in-memory :refer [create-in-memory-connection]]
-            [tupelo.profile :as prof]
-            )
-  (:import (org.neo4j.driver.exceptions TransientException)))
+  (:use tupelo.core)
+  (:require
+    [clojure.test :refer :all]
+    [neo4j-clj.core :refer [defquery disconnect get-session execute with-transaction with-retry]]
+    [neo4j-clj.in-memory :refer [create-in-memory-connection]]
+    [tupelo.profile :as prof]
+    )
+  (:import
+    [org.neo4j.driver.exceptions TransientException]
+    ))
 
 (defquery create-test-user
   "CREATE (u:TestUser $user)-[:SELF {reason: \"to test\"}]->(u)")
