@@ -1,8 +1,12 @@
 (defproject demo "0.1.0-SNAPSHOT"
   :dependencies      [
                       ; [gorillalabs/neo4j-clj "4.1.2"]
+                      ; [joplin.core "0.3.11"]
+
+                      [clj-time "0.15.2"]
                       [org.clojure/clojure "1.10.3"]
-                      [joplin.core "0.3.11"]
+                      [org.neo4j.driver/neo4j-java-driver "4.1.1"]
+                      [org.neo4j.test/neo4j-harness "4.0.0"]
                       [prismatic/schema "1.1.12"]
                       [tupelo "21.07.08"]
                      ]
