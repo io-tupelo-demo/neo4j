@@ -1,13 +1,18 @@
 (ns neo4j-clj.in-memory
   "This namespace contains the logic to connect to JVM-local in-memory Neo4j
   instances, esp. for testing."
-  (:require [neo4j-clj.core :refer [connect]]
-            [neo4j-clj.compatibility :refer [neo4j->clj clj->neo4j]]
-            [clojure.java.io :as io])
-  (:import (java.net ServerSocket)
-           (org.neo4j.driver.internal.logging ConsoleLogging)
-           (java.util.logging Level)
-           (org.neo4j.harness Neo4jBuilders Neo4j)))
+  (:require
+    [clojure.java.io :as io]
+    [neo4j-clj.compatibility :refer [neo4j->clj clj->neo4j]]
+    [neo4j-clj.core :refer [connect]]
+    [tupelo.profile :as prof]
+    )
+  (:import
+    [java.net ServerSocket]
+    [java.util.logging Level]
+    [org.neo4j.driver.internal.logging ConsoleLogging]
+    [org.neo4j.harness Neo4jBuilders Neo4j]
+    ))
 
 ;; In-memory for testing
 
@@ -27,7 +32,8 @@
   "In order to store temporary large graphs, the embedded Neo4j database uses a
   directory and binds to an url. We use the temp directory for that."
   []
-  (.build (Neo4jBuilders/newInProcessBuilder)))
+  (prof/with-timer-print :in-memory-db
+    (.build (Neo4jBuilders/newInProcessBuilder))))
 
 (defn create-in-memory-connection
   "To make the local db visible under the same interface/map as remote
@@ -36,7 +42,8 @@
 
   _All_ data will be wiped after shutting down the db!"
   []
-  (let [url (create-temp-uri)
-        ^Neo4j db (in-memory-db)]
-    (merge (connect (.boltURI db) {:logging (ConsoleLogging. Level/WARNING)})
-           {:destroy-fn #(.close db)})))
+  (prof/with-timer-print :create-in-memory-connection
+    (let [url       (create-temp-uri)
+          ^Neo4j db (in-memory-db)]
+      (merge (connect (.boltURI db) {:logging (ConsoleLogging. Level/WARNING)})
+        {:destroy-fn #(.close db)}))))

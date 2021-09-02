@@ -2,12 +2,17 @@
   "This namespace contains the logic to connect to Neo4j instances,
   create and run queries as well as creating an in-memory database for
   testing."
-  (:require [neo4j-clj.compatibility :refer [neo4j->clj clj->neo4j]])
-  (:import (org.neo4j.driver GraphDatabase AuthTokens Config AuthToken Driver Session)
-           (org.neo4j.driver.exceptions TransientException)
-           (java.net URI)
-           (org.neo4j.driver.internal.logging ConsoleLogging)
-           (java.util.logging Level)))
+  (:require
+    [neo4j-clj.compatibility :refer [neo4j->clj clj->neo4j]]
+    [tupelo.profile :as prof]
+    )
+  (:import
+    [org.neo4j.driver GraphDatabase AuthTokens Config AuthToken Driver Session]
+    [org.neo4j.driver.exceptions TransientException]
+    [java.net URI]
+    [org.neo4j.driver.internal.logging ConsoleLogging]
+    [java.util.logging Level]
+    ))
 
 ;; Connecting to dbs
 
@@ -26,30 +31,36 @@
 
   `:logging`   - a Neo4j logging configuration, e.g. (ConsoleLogging. Level/FINEST)"
   ([^URI uri user password]
-   (connect uri user password nil))
+   (prof/with-timer-print :connect-a
+     (connect uri user password nil)))
+
   ([^URI uri user password options]
-   (let [^AuthToken auth (AuthTokens/basic user password)
-         ^Config config (config options)
-         db (GraphDatabase/driver uri auth config)]
-     {:url        uri,
-      :user       user,
-      :password   password,
-      :db         db
-      :destroy-fn #(.close db)}))
+   (prof/with-timer-print :connect-b
+     (let [^AuthToken auth (AuthTokens/basic user password)
+           ^Config config  (config options)
+           db              (GraphDatabase/driver uri auth config)]
+       {:url        uri,
+        :user       user,
+        :password   password,
+        :db         db
+        :destroy-fn #(.close db)})))
 
   ([^URI uri]
-   (connect uri nil))
+   (prof/with-timer-print :connect-c
+     (connect uri nil)))
 
   ([^URI uri options]
-   (let [^Config config (config options)
-         db (GraphDatabase/driver uri, config)]
-     {:url        uri,
-      :db         db,
-      :destroy-fn #(.close db)})))
+   (prof/with-timer-print :connect-d
+     (let [^Config config (config options)
+           db             (GraphDatabase/driver uri, config)]
+       {:url        uri,
+        :db         db,
+        :destroy-fn #(.close db)}))))
 
 (defn disconnect [db]
   "Disconnect a connection"
-  ((:destroy-fn db)))
+  (prof/with-timer-print :disconnect
+    ((:destroy-fn db))))
 
 
 (defn ^{:deprecated "4.0.2"} create-in-memory-connection
