@@ -1,10 +1,11 @@
 (ns joplin.neo4j.database
-  (:require [clj-time
-             [coerce :as tc]
-             [core :as t]]
-            [neo4j-clj.core :as neo4j]
-            [joplin.core :as j]
-            [ragtime.protocols :refer [DataStore]]))
+  (:require
+    [clj-time.coerce :as tc]
+    [clj-time.core :as t]
+    [joplin.core :as j]
+    [neo4j-clj.core :as neo4j]
+    [ragtime.protocols :refer [DataStore]]
+    ))
 
 ;; Connecting with the database on-demand rather than in new-database
 ;; makes for a prettier log output by joplin. Keep it namespace-independent
