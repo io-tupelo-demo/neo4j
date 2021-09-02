@@ -60,7 +60,7 @@
   (neo4j/constraints-drop-all!)
   (neo4j/indexes-drop-all!))
 
-(dotest-focus
+(dotest   ; -focus
   (let [idx-normal     {:properties        (quote ("title"))
                         :populationPercent 0.0
                         :name              "idx_MovieTitle"

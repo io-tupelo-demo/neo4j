@@ -13,23 +13,22 @@
 
     ; Using a session
     (neo4j/with-session
-      (neo4j/drop-extraneous-dbs!)
+      (neo4j/drop-extraneous-dbs!) ; drop all but "system" and "neo4j" DB's
+      (is-set= (neo4j/db-names-all) ["system" "neo4j"])
       (neo4j/run "create or replace database neo4j") ; drop/recreate default db
 
-      (is= (neo4j/info-map) {:name "Neo4j Kernel" :version "4.3.3" :edition "enterprise"})
-      (is= (neo4j/neo4j-version) "4.3.3")
-      (is= (neo4j/apoc-version) "4.3.0.0")
-
-
-      (is (neo4j/apoc-installed?))
+      ; Sample:  (neo4j/info-map) => {:name "Neo4j Kernel" :version "4.3.3" :edition "enterprise"}
+      (is= (clip-str 2 (neo4j/neo4j-version)) "4.")
+      (is= (clip-str 2 (neo4j/apoc-version)) "4.")
+      (is (neo4j/apoc-installed?)) ; normally want this installed
 
       ; tests consume all output within the session lifetime, so don't need `doall`, `vec`, or `unlazy`
-      (let [create-user-cmd "CREATE (u:User $User)  return u as newb"]
-        (is= (neo4j/run create-user-cmd {:User {:first-name "Luke" :last-name "Skywalker"}})
+      (let [create-user-cmd "CREATE (u:User $Params)  return u as newb"]
+        (is= (neo4j/run create-user-cmd {:Params {:first-name "Luke" :last-name "Skywalker"}})
           [{:newb {:first-name "Luke" :last-name "Skywalker"}}])
-        (is= (neo4j/run create-user-cmd {:User {:first-name "Leia" :last-name "Organa"}})
+        (is= (neo4j/run create-user-cmd {:Params {:first-name "Leia" :last-name "Organa"}})
           [{:newb {:first-name "Leia" :last-name "Organa"}}])
-        (is= (neo4j/run create-user-cmd {:User {:first-name "Anakin" :last-name "Skywalker"}})
+        (is= (neo4j/run create-user-cmd {:Params {:first-name "Anakin" :last-name "Skywalker"}})
           [{:newb {:first-name "Anakin" :last-name "Skywalker"}}])
         (is= 3 (count (neo4j/nodes-all))))
 

@@ -103,10 +103,12 @@
   []
   (mapv #(grab :name %) (run "show databases")))
 
+(def core-db-names
+  "Never delete these DBs! "
+  #{"system" "neo4j"})
 (s/defn drop-extraneous-dbs! :- [s/Str]
   []
-  (let [keep-db-names #{"system" "neo4j"} ; never delete these DBs!
-        drop-db-names (set/difference (set (db-names-all)) keep-db-names)]
+  (let [drop-db-names (set/difference (set (db-names-all)) core-db-names)]
     (doseq [db-name drop-db-names]
       (run (format "drop database %s if exists" db-name)))))
 
@@ -139,7 +141,7 @@
   []
   (keep-if #(user-index? %) (indexes-all-details)))
 
-(s/defn indexes-user :- [s/Str]
+(s/defn indexes-user-names :- [s/Str]
   []
   (mapv #(grab :name %) (indexes-user-details)))
 
@@ -155,8 +157,11 @@
       (indexes-drop! idx-name))))
 
 ;-----------------------------------------------------------------------------
-(s/defn constraints-all :- [tsk/KeyMap]
+(s/defn constraints-all-details :- [tsk/KeyMap]
   [] (vec (run "show all constraints;")))
+
+(s/defn constraints-all-names :- [s/Str]
+  [] (mapv #(grab :name %) (constraints-all-details)))
 
 (s/defn constraint-drop!
   [cnstr-name]
@@ -166,10 +171,9 @@
 
 (s/defn constraints-drop-all!
   []
-  (doseq [cnstr-map (constraints-all)]
-    (let [cnstr-name (grab :name cnstr-map)]
-      (println "dropping constraint " cnstr-name)
-      (constraint-drop! cnstr-name))))
+  (doseq [cnstr-name (constraints-all-names)]
+    (println "  dropping constraint: " cnstr-name)
+    (constraint-drop! cnstr-name)))
 
 ;-----------------------------------------------------------------------------
 (defn delete-all-nodes-simple! ; works, but could overflow jvm heap for large db's

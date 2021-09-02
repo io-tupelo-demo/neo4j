@@ -1,100 +1,110 @@
 (ns tst.demo.indexes
   (:use tupelo.core tupelo.test)
   (:require
+    [schema.core :as s]
     [tupelo.neo4j :as neo4j]
-    [tupelo.string :as str]))
+    [tupelo.string :as str]
+    [tupelo.schema :as tsk]))
 
-(defn create-movie
-  [params]
-  (vec (neo4j/run "CREATE (m:Movie $Data)
-                           return m as film" params)))
-
-(defn get-all-movies
-  [] (vec (neo4j/run "MATCH (m:Movie) RETURN m as flick")))
-
-(dotest-focus
-  (neo4j/with-driver  ; this is URI/username/password (not uri/db/pass!)
+(dotest   ; -focus
+  (neo4j/with-driver ; this is URI/username/password (not uri/db/pass!)
     "bolt://localhost:7687" "neo4j" "secret"
     ; "neo4j+s://4ca9bb9b.databases.neo4j.io" "neo4j" "g6o2KIftFE6EIYMUCIY9a6DW0oVcwihh7m0Z5DP-jcY"
 
+    ; Create a constraint, then an index & compare
     (neo4j/with-session
       (neo4j/drop-extraneous-dbs!)
       (neo4j/run "create or replace database neo4j") ; drop/recreate default db
 
-      (is= 0 (count (neo4j/nodes-all)))
+      ; fresh DB
+      (is= 0 (count (neo4j/nodes-all))) ; no nodes
+      (is= [] (neo4j/indexes-user-names)) ; no user indexes
+      (is= [] (neo4j/constraints-all-details)) ; no user constraints
 
-      (nl)
-      (spyx-pretty :aaa (vec (neo4j/indexes-user-details)))
+      (let [create-movie (s/fn [m :- tsk/KeyMap]
+                           (neo4j/run "CREATE (m:Movie $Data)   return m as film" m))]
 
-      ; note return type :film set by "return ... as ..."
-      (is= (create-movie {:Data {:title "The Matrix"}}) [{:film {:title "The Matrix"}}])
-      (is= (create-movie {:Data {:title "Star Wars"}}) [{:film {:title "Star Wars"}}])
-      (is= (create-movie {:Data {:title "Raiders"}}) [{:film {:title "Raiders"}}])
-      (is= 3 (count (neo4j/nodes-all)))
+        ; note return type :film set by "return ... as ..."
+        (is= (create-movie {:Data {:title "The Matrix"}}) [{:film {:title "The Matrix"}}])
+        (is= (create-movie {:Data {:title "Star Wars"}}) [{:film {:title "Star Wars"}}])
+        (is= (create-movie {:Data {:title "Raiders"}}) [{:film {:title "Raiders"}}])
+        (is= 3 (count (neo4j/nodes-all)))
 
-      ; note return type :flick set by "return ... as ..."
-      (is-set= (get-all-movies)
-        [{:flick {:title "The Matrix"}}
-         {:flick {:title "Star Wars"}}
-         {:flick {:title "Raiders"}}])
+        ; note return type :flick set by "return ... as ..."
+        (is-set= (vec (neo4j/run "MATCH (m:Movie) RETURN m as flick"))
+          [{:flick {:title "The Matrix"}}
+           {:flick {:title "Star Wars"}}
+           {:flick {:title "Raiders"}}])
 
-      (when true
-        (is= [] (neo4j/run "drop constraint cnstr_UniqueMovieTitle if exists ;"))
-        (is= [] (neo4j/run "create constraint  cnstr_UniqueMovieTitle  if not exists
-                            on (m:Movie) assert m.title is unique;"))
-        (is (submap?
-              {:entityType    "NODE",
-               :labelsOrTypes ["Movie"],
-               :name          "cnstr_UniqueMovieTitle",
-               :properties    ["title"],
+        (is= [] (neo4j/run "create constraint  cnstr_UniqueMovieTitle  on (m:Movie)
+                              assert m.title is unique;"))
+        (is (submap? ; NOTE:  index entry has more details than constraint entry
+              {:entityType    "NODE"
+               :labelsOrTypes ["Movie"]
+               :name          "cnstr_UniqueMovieTitle"
+               :properties    ["title"]
                :type          "UNIQUENESS"}
-              (only (neo4j/constraints-all))))
+              (only (neo4j/constraints-all-details))))
+        (is= ["cnstr_UniqueMovieTitle"] (neo4j/constraints-all-names))
 
-        ; verify throws if duplicate title
+        ; verify throws if duplicate movie title
         (throws? (create-movie {:Data {:title "Raiders"}}))
 
-        ; Sometimes (neo4j linux!) extraneous indexes are also returned
-        ; We need to filter them out before performing the test
-        (comment
-          {:properties        nil
-           :populationPercent 100.0
-           :name              "__org_neo4j_schema_index_label_scan_store_converted_to_token_index"
-           :type              "LOOKUP"
-           :state             "ONLINE"
-           :uniqueness        "NONUNIQUE"
-           :id                1
-           :indexProvider     "token-lookup-1.0"
-           :entityType        "NODE"
-           :labelsOrTypes     nil})
-        (let [idx-ours (only (keep-if #(= (grab :name %) "cnstr_UniqueMovieTitle")
-                               (neo4j/indexes-user-details)))] ; there should be only 1
-          (is (wild-match?
-                {:entityType        "NODE"
-                 :id                :*
-                 :indexProvider     "native-btree-1.0"
-                 :labelsOrTypes     ["Movie"]
-                 :name              "cnstr_UniqueMovieTitle"
-                 :populationPercent 100.0
-                 :properties        ["title"]
-                 :state             "ONLINE"
-                 :type              "BTREE"
-                 :uniqueness        "UNIQUE"}
-                idx-ours)))
-        )
+        ; Constraints show up as a user index
+        (is= (neo4j/indexes-user-names) ["cnstr_UniqueMovieTitle"])
+        (is (submap? ; NOTE:  index entry has more details than constraint entry
+              {:entityType        "NODE"
+               :indexProvider     "native-btree-1.0"
+               :labelsOrTypes     ["Movie"]
+               :name              "cnstr_UniqueMovieTitle"
+               :populationPercent 100.0
+               :properties        ["title"]
+               :state             "ONLINE"
+               :type              "BTREE"
+               :uniqueness        "UNIQUE"}
+              (only (neo4j/indexes-user-details))))
 
-      (nl)
-      (spyx-pretty :bbb (vec (neo4j/indexes-user-details)))
-      (nl)
-      (is= []
-        (vec (neo4j/run
-               "create index  idx_MovieTitle  if not exists
-                              for (m:Movie) on (m.title);")))
-      (nl)
-      (spyx-pretty :ccc (vec (neo4j/indexes-user-details)))
+        ; Adding a redundant index will be ignored due to pre-existing constraint index
+        (vec (neo4j/run "create index  idx_MovieTitle  if not exists
+                           for (m:Movie) on (m.title);"))
+        (is= (neo4j/indexes-user-names) ["cnstr_UniqueMovieTitle"])
 
+        ; index never created, so it throws if we try to drop
+        (throws? (vec (neo4j/run "drop index  idx_MovieTitle ")))
 
-      ; works, but could overflow jvm heap for large db's
-      (vec (neo4j/run "match (m:Movie) detach delete m;"))
+        ; we can drop the constraint
+        (is= [] (vec (neo4j/run "drop constraint  cnstr_UniqueMovieTitle")))))
 
-      )))
+    ; Create an index, then a constraint & compare
+    (neo4j/with-session
+      (neo4j/drop-extraneous-dbs!)
+      (neo4j/run "create or replace database neo4j") ; drop/recreate default db
+
+      (let [create-movie (s/fn [m :- tsk/KeyMap]
+                           (neo4j/run "CREATE (m:Movie $Data)   return m as film" m))]
+
+        ; note return type :film set by "return ... as ..."
+        (is= (create-movie {:Data {:title "The Matrix"}}) [{:film {:title "The Matrix"}}])
+        (is= (create-movie {:Data {:title "Star Wars"}}) [{:film {:title "Star Wars"}}])
+        (is= (create-movie {:Data {:title "Raiders"}}) [{:film {:title "Raiders"}}])
+        (is= 3 (count (neo4j/nodes-all))))
+
+      ; Adding an index works since no contraint
+      (vec (neo4j/run "create index  idx_MovieTitle  for (m:Movie) on (m.title);"))
+      (is= (neo4j/indexes-user-names) ["idx_MovieTitle"])
+
+      ; cannot create a constraint if pre-existing index
+      (throws? (neo4j/run "create constraint  cnstr_UniqueMovieTitle  on (m:Movie)
+                              assert m.title is unique;"))
+      (neo4j/run "drop index  idx_MovieTitle ")
+      (is= [] (neo4j/run "create constraint  cnstr_UniqueMovieTitle  on (m:Movie)
+                              assert m.title is unique;"))
+      (is= (neo4j/constraints-all-names) ["cnstr_UniqueMovieTitle"])
+      (is= (neo4j/indexes-user-names) ["cnstr_UniqueMovieTitle"])
+
+      (neo4j/constraints-drop-all!)
+      (is= (neo4j/constraints-all-names) [])
+      (is= (neo4j/indexes-user-names) []))
+
+    ))
 
