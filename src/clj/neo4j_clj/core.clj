@@ -3,7 +3,7 @@
   create and run queries as well as creating an in-memory database for
   testing."
   (:require
-    [neo4j-clj.compatibility :as compat ]
+    [neo4j-clj.conversion :as conv]
     [tupelo.profile :as prof]
     )
   (:import
@@ -87,9 +87,9 @@
 
 (defn execute
   ([sess query params]
-   (compat/neo4j->clj (.run sess query (compat/clj->neo4j params))))
+   (conv/neo4j->clj (.run sess query (conv/clj->neo4j params))))
   ([sess query]
-   (compat/neo4j->clj (.run sess query))))
+   (conv/neo4j->clj (.run sess query))))
 
 (defn create-query
   "Convenience function. Takes a cypher query as input, returns a function that
@@ -122,5 +122,5 @@
 
 (defmacro with-retry [[connection tx & {:keys [max-times] :or {max-times 1000}}] & body]
   `(retry-times ~max-times
-                (fn []
-                  (with-transaction ~connection ~tx ~@body))))
+     (fn []
+       (with-transaction ~connection ~tx ~@body))))

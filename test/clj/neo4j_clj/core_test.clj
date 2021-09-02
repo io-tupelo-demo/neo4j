@@ -3,9 +3,8 @@
   (:require
     [clojure.test :refer :all]
     [neo4j-clj.core :refer [defquery disconnect get-session execute with-transaction with-retry]]
-    ; [neo4j-clj.in-memory :refer [create-in-memory-connection]]
-    [tupelo.profile :as prof]
     [tupelo.neo4j :as neo4j]
+    [tupelo.profile :as prof]
     )
   (:import
     [org.neo4j.driver.exceptions TransientException]

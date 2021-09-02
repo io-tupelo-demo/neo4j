@@ -1,4 +1,4 @@
-(ns neo4j-clj.compatibility
+(ns neo4j-clj.conversion
   "Neo4j communicates with Java via custom data structures. Those are
    can contain lists, maps, nulls, values or combinations. This namespace
    has functions to help to convert between Neo4j's data structures and Clojure"
