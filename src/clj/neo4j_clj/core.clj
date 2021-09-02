@@ -3,7 +3,7 @@
   create and run queries as well as creating an in-memory database for
   testing."
   (:require
-    [neo4j-clj.compatibility :refer [neo4j->clj clj->neo4j]]
+    [neo4j-clj.compatibility :as compat ]
     [tupelo.profile :as prof]
     )
   (:import
@@ -87,9 +87,9 @@
 
 (defn execute
   ([sess query params]
-   (neo4j->clj (.run sess query (clj->neo4j params))))
+   (compat/neo4j->clj (.run sess query (compat/clj->neo4j params))))
   ([sess query]
-   (neo4j->clj (.run sess query))))
+   (compat/neo4j->clj (.run sess query))))
 
 (defn create-query
   "Convenience function. Takes a cypher query as input, returns a function that
