@@ -1,7 +1,7 @@
 (ns neo4j-clj.compatibility
   "Neo4j communicates with Java via custom data structures. Those are
-  can contain lists, maps, nulls, values or combinations. This namespace
-  has functions to help to convert between Neo4j's data structures and Clojure"
+   can contain lists, maps, nulls, values or combinations. This namespace
+   has functions to help to convert between Neo4j's data structures and Clojure"
   (:require [clojure.walk])
   (:import
     [clojure.lang ISeq]
@@ -50,7 +50,7 @@
   (let [f (fn [[k v]]
             [(if (string? k) (keyword k) k) (neo4j->clj v)])]
 
-    ;; only apply to maps
+    ; only apply to maps
     (clojure.walk/postwalk
       (fn [x]
         (if (or (map? x) (instance? Map x))

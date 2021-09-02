@@ -14,8 +14,6 @@
     [org.neo4j.driver.internal.logging ConsoleLogging]
     ))
 
-;; Connecting to dbs
-
 (defn config [options]
   (let [logging (:logging options (ConsoleLogging. Level/CONFIG))]
     (-> (Config/builder)
@@ -63,26 +61,8 @@
     ((:destroy-fn db))))
 
 
-;(defn ^{:deprecated "4.0.2"} create-in-memory-connection
-;  "To make the local db visible under the same interface/map as remote
-;  databases, we connect to the local url. To be able to shutdown the local db,
-;  we merge a destroy function into the map that can be called after testing.
-;
-;  _All_ data will be wiped after shutting down the db!
-;
-;  Deprecated: Please use `neo4j-clj.in-memory/create-in-memory-connection`
-;  directly."
-;  []
-;  (try
-;    (require 'neo4j-clj.in-memory)
-;    (when-let [in-mem (find-ns 'neo4j-clj.in-memory)]
-;      ((ns-resolve in-mem 'create-in-memory-connection)))
-;    (catch Throwable t
-;      (throw (ex-info "Sorry, unable to create an in-memory Neo4j instance.
-;Did you include neo4j-harness to your classpath, e.g. as a test dependency
-;to your project?" {} t)))))
 
-;; Sessions and transactions
+; Sessions and transactions
 
 (defn get-session [^Driver connection]
   (.session (:db connection)))
@@ -95,7 +75,7 @@
     (commit [] (.commit tx))
     (rollback [] (.rollback tx))
 
-    ;; We only want to auto-success to ensure persistence
+    ; We only want to auto-success to ensure persistence
     (close []
       (.commit tx)
       (.close tx))))
@@ -103,7 +83,7 @@
 (defn get-transaction [^Session session]
   (make-success-transaction (.beginTransaction session)))
 
-;; Executing cypher queries
+; Executing cypher queries
 
 (defn execute
   ([sess query params]
