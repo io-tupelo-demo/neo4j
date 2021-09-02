@@ -7,11 +7,11 @@
     [tupelo.profile :as prof]
     )
   (:import
+    [java.net URI]
+    [java.util.logging Level]
     [org.neo4j.driver GraphDatabase AuthTokens Config AuthToken Driver Session]
     [org.neo4j.driver.exceptions TransientException]
-    [java.net URI]
     [org.neo4j.driver.internal.logging ConsoleLogging]
-    [java.util.logging Level]
     ))
 
 ;; Connecting to dbs
@@ -63,24 +63,24 @@
     ((:destroy-fn db))))
 
 
-(defn ^{:deprecated "4.0.2"} create-in-memory-connection
-  "To make the local db visible under the same interface/map as remote
-  databases, we connect to the local url. To be able to shutdown the local db,
-  we merge a destroy function into the map that can be called after testing.
-
-  _All_ data will be wiped after shutting down the db!
-
-  Deprecated: Please use `neo4j-clj.in-memory/create-in-memory-connection`
-  directly."
-  []
-  (try
-    (require 'neo4j-clj.in-memory)
-    (when-let [in-mem (find-ns 'neo4j-clj.in-memory)]
-      ((ns-resolve in-mem 'create-in-memory-connection)))
-    (catch Throwable t
-      (throw (ex-info "Sorry, unable to create an in-memory Neo4j instance.
-Did you include neo4j-harness to your classpath, e.g. as a test dependency
-to your project?" {} t)))))
+;(defn ^{:deprecated "4.0.2"} create-in-memory-connection
+;  "To make the local db visible under the same interface/map as remote
+;  databases, we connect to the local url. To be able to shutdown the local db,
+;  we merge a destroy function into the map that can be called after testing.
+;
+;  _All_ data will be wiped after shutting down the db!
+;
+;  Deprecated: Please use `neo4j-clj.in-memory/create-in-memory-connection`
+;  directly."
+;  []
+;  (try
+;    (require 'neo4j-clj.in-memory)
+;    (when-let [in-mem (find-ns 'neo4j-clj.in-memory)]
+;      ((ns-resolve in-mem 'create-in-memory-connection)))
+;    (catch Throwable t
+;      (throw (ex-info "Sorry, unable to create an in-memory Neo4j instance.
+;Did you include neo4j-harness to your classpath, e.g. as a test dependency
+;to your project?" {} t)))))
 
 ;; Sessions and transactions
 

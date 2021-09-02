@@ -3,24 +3,27 @@
   can contain lists, maps, nulls, values or combinations. This namespace
   has functions to help to convert between Neo4j's data structures and Clojure"
   (:require [clojure.walk])
-  (:import (org.neo4j.driver Values)
-           (org.neo4j.driver.internal
-             InternalRecord
-             InternalPair
-             InternalRelationship
-             InternalNode InternalResult)
-           (org.neo4j.driver.internal.value
-             NodeValue
-             NullValue
-             ListValue
-             MapValue
-             RelationshipValue
-             StringValue
-             BooleanValue
-             NumberValueAdapter
-             ObjectValueAdapter)
-           (java.util Map List)
-           (clojure.lang ISeq)))
+  (:import
+    [clojure.lang ISeq]
+    [java.util Map List]
+
+    [org.neo4j.driver Values]
+    [org.neo4j.driver.internal
+      InternalNode InternalResult
+      InternalPair
+      InternalRecord
+      InternalRelationship]
+    [org.neo4j.driver.internal.value
+      BooleanValue
+      ListValue
+      MapValue
+      NodeValue
+      NullValue
+      NumberValueAdapter
+      ObjectValueAdapter
+      RelationshipValue
+      StringValue]
+    ))
 
 (defn clj->neo4j
   "## Convert to Neo4j
