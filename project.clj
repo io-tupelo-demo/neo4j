@@ -1,6 +1,6 @@
 (defproject demo "0.1.0-SNAPSHOT"
   :dependencies      [
-                      [gorillalabs/neo4j-clj "4.1.2"]
+                      ; [gorillalabs/neo4j-clj "4.1.2"]
                       [org.clojure/clojure "1.10.3"]
                       [joplin.core "0.3.11"]
                       [prismatic/schema "1.1.12"]
