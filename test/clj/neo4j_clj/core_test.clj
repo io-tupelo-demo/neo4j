@@ -2,7 +2,7 @@
   (:use tupelo.core)
   (:require
     [clojure.test :refer :all]
-    ; [neo4j-clj.neo4j-impl :as neolib ]
+    ; [tupelo.neo4j-impl :as neolib ]
     [tupelo.neo4j :as neo4j]
     [tupelo.profile :as prof]
     )
