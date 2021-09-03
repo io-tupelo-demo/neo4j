@@ -3,6 +3,7 @@
                       [clj-time "0.15.2"]
                       [org.clojure/clojure "1.10.3"]
                       [org.neo4j.driver/neo4j-java-driver "4.1.1"]
+                     ;[org.neo4j.driver/neo4j-java-driver "4.3.4"] ; #todo upgrade
                       [prismatic/schema "1.1.12"]
                       [tupelo "21.07.08"]
                      ]
