@@ -85,7 +85,7 @@
 
 ; Executing cypher queries
 
-(defn execute
+(defn session-run
   ([sess query params]
    (conv/neo4j->clj (.run sess query (conv/clj->neo4j params))))
   ([sess query]
@@ -100,8 +100,8 @@
     result as a map."
     [cypher]
     (fn
-      ([sess] (execute sess cypher))
-      ([sess params] (execute sess cypher params))))
+      ([sess] (session-run sess cypher))
+      ([sess params] (session-run sess cypher params))))
 
   (defmacro defquery
     "Shortcut macro to define a named query."

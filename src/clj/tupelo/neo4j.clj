@@ -60,7 +60,7 @@
 ;-----------------------------------------------------------------------------
 (s/defn run :- tsk/Vec
   "Runs a neo4j cypher command.  Must be enclosed by a `(with-session ...)` form."
-  [query & args] (apply neolib/execute tupelo.neo4j/*neo4j-session* query args))
+  [query & args] (apply neolib/session-run tupelo.neo4j/*neo4j-session* query args))
 
 (s/defn info-map :- tsk/KeyMap
   []
