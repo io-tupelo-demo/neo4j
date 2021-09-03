@@ -26,11 +26,10 @@
           {:params homer})
 
         ; Read node
-        (is= (only (neo4j/run get-test-users-by-name-cmd {:name "Homer Simpson"}))
-          homer)
+        (is= homer (only (neo4j/run get-test-users-by-name-cmd {:name "Homer Simpson"})))
 
         ; Read node & edge
-        (is= (first (neo4j/run "MATCH (u:TestUser {name: $name})-[s:SELF]->()
+        (is= (only (neo4j/run "MATCH (u:TestUser {name: $name})-[s:SELF]->()
                                     RETURN collect(u) as ucoll, collect(s) as scoll"
                       {:name "Homer Simpson"}))
           {:ucoll [homer]
