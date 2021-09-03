@@ -2,7 +2,8 @@
   (:use tupelo.core tupelo.test)
   (:require
     [tupelo.neo4j :as neo4j]
-  ))
+    [tupelo.string :as str]
+    ))
 
 ; Simple CRUD
 (deftest create-get-delete-user
@@ -20,28 +21,24 @@
                                                   u.age as age,
                                                   u.smokes as smokes"]
 
-        (testing "You can create a new user with neo4j"
-          (neo4j/run "CREATE (u:TestUser $params)-[:SELF {reason: \"to test\"}]->(u)"
-            {:params homer}))
+        ; Create node & loopback edge
+        (neo4j/run (str/quotes->double "CREATE (u:TestUser $params)-[:SELF {reason: 'loopback-test'}]->(u)")
+          {:params homer})
 
-        (testing "You can get a created user by name"
-          (is (= (only (neo4j/run get-test-users-by-name-cmd {:name "Homer Simpson"}))
-                homer)))
+        ; Read node
+        (is= (only (neo4j/run get-test-users-by-name-cmd {:name "Homer Simpson"}))
+          homer)
 
-        (testing "You can get a relationship"
-          (is (= (first (neo4j/run "MATCH (u:TestUser {name: $name})-[s:SELF]->()
+        ; Read node & edge
+        (is= (first (neo4j/run "MATCH (u:TestUser {name: $name})-[s:SELF]->()
                                     RETURN collect(u) as ucoll, collect(s) as scoll"
-                          {:name "Homer Simpson"}))
-                {:ucoll [homer]
-                 :scoll [{:reason "to test"}]})))
+                      {:name "Homer Simpson"}))
+          {:ucoll [homer]
+           :scoll [{:reason "loopback-test"}]})
 
-        (testing "You can remove a user by name"
-          (neo4j/run "MATCH (u:TestUser {name: $name})   DETACH DELETE u" {:name "Homer Simpson"}))
-
-        (testing "Removed users can't be retrieved"
-          (is (= [] (neo4j/run get-test-users-by-name-cmd {:name "Homer Simpson"}))))
-
-        ))))
+        ; Delete node & verify
+        (neo4j/run "MATCH (u:TestUser {name: $name})   DETACH DELETE u" {:name "Homer Simpson"})
+        (is= [] (neo4j/run get-test-users-by-name-cmd {:name "Homer Simpson"}))))))
 
 ; Old (orig) tests.  Rewrite instead of adapting.
 ;(comment
