@@ -4,14 +4,14 @@
   testing."
   (:require
     [neo4j-clj.conversion :as conv]
-    )
+  )
   (:import
     [java.net URI]
     [java.util.logging Level]
     [org.neo4j.driver GraphDatabase AuthTokens Config AuthToken Driver Session]
     [org.neo4j.driver.exceptions TransientException]
     [org.neo4j.driver.internal.logging ConsoleLogging]
-    ))
+  ))
 
 (defn config [options]
   (let [logging (:logging options (ConsoleLogging. Level/CONFIG))]
@@ -31,56 +31,45 @@
    (let [^AuthToken auth (AuthTokens/basic user password)
          ^Config config  (config options)
          driver          (GraphDatabase/driver uri auth config)]
-     {:url        uri,
-      :user       user,
-      :password   password,
-      :driver         driver
-      :destroy-fn #(.close driver)}))
+     driver))
 
   ([^URI uri] (connect uri nil))
   ([^URI uri options]
    (let [^Config config (config options)
          driver         (GraphDatabase/driver uri, config)]
-     {:url        uri,
-      :driver         driver,
-      :destroy-fn #(.close driver)})))
+      driver)))
 
 (defn disconnect [db]
   "Disconnect a connection"
   ((:destroy-fn db)))
 
 ;-----------------------------------------------------------------------------
-; Sessions and transactions
-
-(defn get-session [^Driver connection]
-  (.session (:driver connection)))
-
-(defn- make-success-transaction [tx]
-  (proxy [org.neo4j.driver.Transaction] []
-    (run
-      ([q] (.run tx q))
-      ([q p] (.run tx q p)))
-    (commit [] (.commit tx))
-    (rollback [] (.rollback tx))
-
-    ; We only want to auto-success to ensure persistence
-    (close []
-      (.commit tx)
-      (.close tx))))
-
-(defn get-transaction [^Session session]
-  (make-success-transaction (.beginTransaction session)))
-
-; Executing cypher queries
+(defn get-session
+  [^Driver connection]
+  (.session connection))
 
 (defn session-run
-  ([sess query params]
-   (conv/neo4j->clj (.run sess query (conv/clj->neo4j params))))
-  ([sess query]
-   (conv/neo4j->clj (.run sess query))))
+  ([sess query] (conv/neo4j->clj (.run sess query)))
+  ([sess query params] (conv/neo4j->clj (.run sess query (conv/clj->neo4j params)))))
 
 ; obsolete code from the orig lib
 (comment
+
+  (defn- make-success-transaction [tx]
+    (proxy [org.neo4j.driver.Transaction] []
+      (run
+        ([q] (.run tx q))
+        ([q p] (.run tx q p)))
+      (commit [] (.commit tx))
+      (rollback [] (.rollback tx))
+
+      ; We only want to auto-success to ensure persistence
+      (close []
+        (.commit tx)
+        (.close tx))))
+
+  (defn get-transaction [^Session session]
+    (make-success-transaction (.beginTransaction session)))
 
   (defn create-query
     "Convenience function. Takes a cypher query as input, returns a function that

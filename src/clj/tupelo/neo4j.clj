@@ -1,24 +1,19 @@
 (ns tupelo.neo4j
   (:use tupelo.core)
   (:require
-    [tupelo.neo4j.impl :as neolib]
     [schema.core :as s]
+    [tupelo.neo4j.impl :as neolib]
+    [tupelo.schema :as tsk]
     [tupelo.set :as set]
     [tupelo.string :as str]
-    [tupelo.schema :as tsk])
+    )
   (:import
     [java.net URI]
     ))
 
 ; A neo4j connection map with the driver under `:driver`
 ; #todo fork & cleanup from neo4j-clj.core to remove extraneous junk
-(def ^:dynamic *neo4j-driver-map* nil) ; #todo add earmuffs
-; Sample:
-;   {:url        #object[java.net.URI 0x1d4d84fb "neo4j+s://4ca9bb9b.databases.neo4j.io"],
-;    :user       "neo4j",
-;    :password   "g6o2KIftFE6EIYMUCIY9a6DW0oVcwihh7m0Z5DP-jcY",
-;    :driver     #object[org.neo4j.driver.internal.InternalDriver 0x59e97f75 "org.neo4j.driver.internal.InternalDriver@59e97f75"],
-;    :destroy-fn #object[neo4j_clj.core$connect$fn__19085 0x1d696b35 "neo4j_clj.core$connect$fn__19085@1d696b35"]}
+(def ^:dynamic *neo4j-driver* nil) ; #todo add earmuffs
 
 ; a neo4j Session object
 (def ^:dynamic *neo4j-session* nil) ; #todo add earmuffs
@@ -31,8 +26,8 @@
 ;-----------------------------------------------------------------------------
 (defn ^:no-doc with-driver-impl
   [[uri user pass & forms]]
-  `(binding [tupelo.neo4j/*neo4j-driver-map* (neolib/connect (URI. ~uri) ~user ~pass)]
-     (with-open [n4driver# (:driver tupelo.neo4j/*neo4j-driver-map*)]
+  `(binding [tupelo.neo4j/*neo4j-driver* (neolib/connect (URI. ~uri) ~user ~pass)]
+     (with-open [n4driver# tupelo.neo4j/*neo4j-driver*]
        (when *verbose* (spy :with-driver-impl--enter n4driver#))
        ~@forms
        (when *verbose* (spy :with-driver-impl--leave n4driver#)))))
@@ -45,7 +40,7 @@
 ;-----------------------------------------------------------------------------
 (defn ^:no-doc with-session-impl
   [forms]
-  `(binding [tupelo.neo4j/*neo4j-session* (neolib/get-session tupelo.neo4j/*neo4j-driver-map*)]
+  `(binding [tupelo.neo4j/*neo4j-session* (neolib/get-session tupelo.neo4j/*neo4j-driver*)]
      (with-open [n4session# tupelo.neo4j/*neo4j-session*]
        (when *verbose* (spy :sess-open-enter--enter n4session#))
        ~@forms
@@ -147,14 +142,12 @@
 
 (s/defn indexes-drop!
   [idx-name]
-  (let [cmd (format "drop index %s if exists" idx-name)]
-    (run cmd)))
+  (run (format "drop index %s if exists" idx-name)))
 
 (s/defn indexes-drop-all!
   []
   (doseq [idx-map (indexes-user-details)]
-    (let [idx-name (grab :name idx-map)]
-      (indexes-drop! idx-name))))
+    (indexes-drop! (grab :name idx-map))))
 
 ;-----------------------------------------------------------------------------
 (s/defn constraints-all-details :- [tsk/KeyMap]
@@ -165,14 +158,11 @@
 
 (s/defn constraint-drop!
   [cnstr-name]
-  (let [cmd (format "drop constraint %s if exists" cnstr-name)]
-    (spyx cmd)
-    (run cmd)))
+  (run (format "drop constraint %s if exists" cnstr-name)))
 
 (s/defn constraints-drop-all!
   []
   (doseq [cnstr-name (constraints-all-names)]
-    (println "  dropping constraint: " cnstr-name)
     (constraint-drop! cnstr-name)))
 
 ;-----------------------------------------------------------------------------
@@ -196,6 +186,4 @@
   (if (apoc-installed?)
     (delete-all-nodes-apoc!)
     (delete-all-nodes-simple!)))
-
-
 
