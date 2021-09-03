@@ -4,7 +4,6 @@
   testing."
   (:require
     [neo4j-clj.conversion :as conv]
-    [tupelo.profile :as prof]
     )
   (:import
     [java.net URI]
@@ -29,39 +28,33 @@
 
   `:logging`   - a Neo4j logging configuration, e.g. (ConsoleLogging. Level/FINEST)"
   ([^URI uri user password]
-   (prof/with-timer-print :connect-a
-     (connect uri user password nil)))
+   (connect uri user password nil))
 
   ([^URI uri user password options]
-   (prof/with-timer-print :connect-b
-     (let [^AuthToken auth (AuthTokens/basic user password)
-           ^Config config  (config options)
-           db              (GraphDatabase/driver uri auth config)]
-       {:url        uri,
-        :user       user,
-        :password   password,
-        :db         db
-        :destroy-fn #(.close db)})))
+   (let [^AuthToken auth (AuthTokens/basic user password)
+         ^Config config  (config options)
+         db              (GraphDatabase/driver uri auth config)]
+     {:url        uri,
+      :user       user,
+      :password   password,
+      :db         db
+      :destroy-fn #(.close db)}))
 
   ([^URI uri]
-   (prof/with-timer-print :connect-c
-     (connect uri nil)))
+   (connect uri nil))
 
   ([^URI uri options]
-   (prof/with-timer-print :connect-d
-     (let [^Config config (config options)
-           db             (GraphDatabase/driver uri, config)]
-       {:url        uri,
-        :db         db,
-        :destroy-fn #(.close db)}))))
+   (let [^Config config (config options)
+         db             (GraphDatabase/driver uri, config)]
+     {:url        uri,
+      :db         db,
+      :destroy-fn #(.close db)})))
 
 (defn disconnect [db]
   "Disconnect a connection"
-  (prof/with-timer-print :disconnect
-    ((:destroy-fn db))))
+  ((:destroy-fn db)))
 
-
-
+;-----------------------------------------------------------------------------
 ; Sessions and transactions
 
 (defn get-session [^Driver connection]

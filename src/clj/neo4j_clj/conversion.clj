@@ -48,7 +48,10 @@
 
 (defn transform [m]
   (let [f (fn [[k v]]
-            [(if (string? k) (keyword k) k) (neo4j->clj v)])]
+            [(if (string? k)
+               (keyword k)
+               k)
+             (neo4j->clj v)])]
 
     ; only apply to maps
     (clojure.walk/postwalk
