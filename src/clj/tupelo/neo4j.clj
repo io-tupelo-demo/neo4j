@@ -10,14 +10,14 @@
     [java.net URI]
     ))
 
-; A neo4j connection map with the driver under `:db`
+; A neo4j connection map with the driver under `:driver`
 ; #todo fork & cleanup from neo4j-clj.core to remove extraneous junk
 (def ^:dynamic *neo4j-driver-map* nil) ; #todo add earmuffs
 ; Sample:
 ;   {:url        #object[java.net.URI 0x1d4d84fb "neo4j+s://4ca9bb9b.databases.neo4j.io"],
 ;    :user       "neo4j",
 ;    :password   "g6o2KIftFE6EIYMUCIY9a6DW0oVcwihh7m0Z5DP-jcY",
-;    :db         #object[org.neo4j.driver.internal.InternalDriver 0x59e97f75 "org.neo4j.driver.internal.InternalDriver@59e97f75"],
+;    :driver     #object[org.neo4j.driver.internal.InternalDriver 0x59e97f75 "org.neo4j.driver.internal.InternalDriver@59e97f75"],
 ;    :destroy-fn #object[neo4j_clj.core$connect$fn__19085 0x1d696b35 "neo4j_clj.core$connect$fn__19085@1d696b35"]}
 
 ; a neo4j Session object
@@ -32,7 +32,7 @@
 (defn ^:no-doc with-driver-impl
   [[uri user pass & forms]]
   `(binding [tupelo.neo4j/*neo4j-driver-map* (neolib/connect (URI. ~uri) ~user ~pass)]
-     (with-open [n4driver# (:db tupelo.neo4j/*neo4j-driver-map*)]
+     (with-open [n4driver# (:driver tupelo.neo4j/*neo4j-driver-map*)]
        (when *verbose* (spy :with-driver-impl--enter n4driver#))
        ~@forms
        (when *verbose* (spy :with-driver-impl--leave n4driver#)))))

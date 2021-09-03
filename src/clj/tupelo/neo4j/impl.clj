@@ -20,35 +20,30 @@
         (.build))))
 
 (defn connect
-  "Returns a connection map from an url. Uses BOLT as the only communication
-  protocol.
+  "Returns a connection map from an url. Uses BOLT as the only communication protocol.
 
-  You can connect using a url or a url, user, password combination.
-  Either way, you can optioninally pass a map of options:
+   You can connect using a url or a url, user, password combination.
+   Either way, you can optioninally pass a map of options:
 
   `:logging`   - a Neo4j logging configuration, e.g. (ConsoleLogging. Level/FINEST)"
-  ([^URI uri user password]
-   (connect uri user password nil))
-
+  ([^URI uri user password] (connect uri user password nil))
   ([^URI uri user password options]
    (let [^AuthToken auth (AuthTokens/basic user password)
          ^Config config  (config options)
-         db              (GraphDatabase/driver uri auth config)]
+         driver          (GraphDatabase/driver uri auth config)]
      {:url        uri,
       :user       user,
       :password   password,
-      :db         db
-      :destroy-fn #(.close db)}))
+      :driver         driver
+      :destroy-fn #(.close driver)}))
 
-  ([^URI uri]
-   (connect uri nil))
-
+  ([^URI uri] (connect uri nil))
   ([^URI uri options]
    (let [^Config config (config options)
-         db             (GraphDatabase/driver uri, config)]
+         driver         (GraphDatabase/driver uri, config)]
      {:url        uri,
-      :db         db,
-      :destroy-fn #(.close db)})))
+      :driver         driver,
+      :destroy-fn #(.close driver)})))
 
 (defn disconnect [db]
   "Disconnect a connection"
@@ -58,7 +53,7 @@
 ; Sessions and transactions
 
 (defn get-session [^Driver connection]
-  (.session (:db connection)))
+  (.session (:driver connection)))
 
 (defn- make-success-transaction [tx]
   (proxy [org.neo4j.driver.Transaction] []
