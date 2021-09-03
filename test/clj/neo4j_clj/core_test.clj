@@ -2,7 +2,7 @@
   (:use tupelo.core)
   (:require
     [clojure.test :refer :all]
-    [neo4j-clj.core :refer [defquery disconnect get-session execute with-transaction with-retry]]
+    ; [neo4j-clj.core :as neolib ]
     [tupelo.neo4j :as neo4j]
     [tupelo.profile :as prof]
     )
@@ -22,10 +22,7 @@
 (defn with-temp-db
   [tests]
   (prof/with-timer-print :with-temp-db
-    ; (def temp-db (create-in-memory-connection))
-    ; (spyx-pretty temp-db)
     (tests)
-    ; (disconnect temp-db)
     ))
 
 (use-fixtures :once with-temp-db)
@@ -67,29 +64,29 @@
   ; Cypher exceptions
   (deftest invalid-cypher-does-throw
     (prof/with-timer-print :invalid-cypher-does-throw
-      (with-open [session (get-session temp-db)]
+      (with-open [session (neolib/get-session temp-db)]
         (testing "An invalid cypher query does trigger an exception"
-          (is (thrown? Exception (execute session "INVALID!!§$/%&/(")))))))
+          (is (thrown? Exception (neolib/execute session "INVALID!!§$/%&/(")))))))
 
   ; Transactions
   (deftest transactions-do-commit
     (prof/with-timer-print :transactions-do-commit
       (testing "If using a transaction, writes are persistet"
-        (with-transaction temp-db tx
-          (execute tx "CREATE (x:test $t)" {:t {:payload 42}})))
+        (neolib/with-transaction temp-db tx
+          (neolib/execute tx "CREATE (x:test $t)" {:t {:payload 42}})))
 
       (testing "If using a transaction, writes are persistet"
-        (with-transaction temp-db tx
-          (is (= (execute tx "MATCH (x:test) RETURN x")
+        (neolib/with-transaction temp-db tx
+          (is (= (neolib/execute tx "MATCH (x:test) RETURN x")
                 '({:x {:payload 42}})))))
 
       (testing "If using a transaction, writes are persistet"
-        (with-transaction temp-db tx
-          (execute tx "MATCH (x:test) DELETE x" {:t {:payload 42}})))
+        (neolib/with-transaction temp-db tx
+          (neolib/execute tx "MATCH (x:test) DELETE x" {:t {:payload 42}})))
 
       (testing "If using a transaction, writes are persistet"
-        (with-transaction temp-db tx
-          (is (= (execute tx "MATCH (x:test) RETURN x")
+        (neolib/with-transaction temp-db tx
+          (is (= (neolib/execute tx "MATCH (x:test) RETURN x")
                 '()))))))
 
   ; Retry
@@ -98,17 +95,17 @@
       (testing "When a deadlock occures,"
         (testing "the transaction throws an Exception"
           (is (thrown? TransientException
-                (with-transaction temp-db tx
+                (neolib/with-transaction temp-db tx
                   (throw (TransientException. "" "I fail"))))))
         (testing "the retried transaction works"
           (let [fail-times (atom 3)]
             (is (= :result
-                  (with-retry [temp-db tx]
+                  (neolib/with-retry [temp-db tx]
                     (if (pos? @fail-times)
                       (do (swap! fail-times dec)
                           (throw (TransientException. "" "I fail")))
                       :result))))))
         (testing "the retried transaction throws after max retries"
           (is (thrown? TransientException
-                (with-retry [temp-db tx]
+                (neolib/with-retry [temp-db tx]
                   (throw (TransientException. "" "I fail"))))))))))

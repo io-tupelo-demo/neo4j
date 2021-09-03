@@ -91,36 +91,39 @@
   ([sess query]
    (conv/neo4j->clj (.run sess query))))
 
-(defn create-query
-  "Convenience function. Takes a cypher query as input, returns a function that
-  takes a session (and parameter as a map, optionally) and return the query
-  result as a map."
-  [cypher]
-  (fn
-    ([sess] (execute sess cypher))
-    ([sess params] (execute sess cypher params))))
+; obsolete code from the orig lib
+(comment
 
-(defmacro defquery
-  "Shortcut macro to define a named query."
-  [name ^String query]
-  `(def ~name (create-query ~query)))
+  (defn create-query
+    "Convenience function. Takes a cypher query as input, returns a function that
+    takes a session (and parameter as a map, optionally) and return the query
+    result as a map."
+    [cypher]
+    (fn
+      ([sess] (execute sess cypher))
+      ([sess params] (execute sess cypher params))))
 
-(defn retry-times [times body]
-  (let [res (try
-              {:result (body)}
-              (catch TransientException e#
-                (if (zero? times)
-                  (throw e#)
-                  {:exception e#})))]
-    (if (:exception res)
-      (recur (dec times) body)
-      (:result res))))
+  (defmacro defquery
+    "Shortcut macro to define a named query."
+    [name ^String query]
+    `(def ~name (create-query ~query)))
 
-(defmacro with-transaction [connection tx & body]
-  `(with-open [~tx (get-transaction (get-session ~connection))]
-     ~@body))
+  (defn retry-times [times body]
+    (let [res (try
+                {:result (body)}
+                (catch TransientException e#
+                  (if (zero? times)
+                    (throw e#)
+                    {:exception e#})))]
+      (if (:exception res)
+        (recur (dec times) body)
+        (:result res))))
 
-(defmacro with-retry [[connection tx & {:keys [max-times] :or {max-times 1000}}] & body]
-  `(retry-times ~max-times
-     (fn []
-       (with-transaction ~connection ~tx ~@body))))
+  (defmacro with-transaction [connection tx & body]
+    `(with-open [~tx (get-transaction (get-session ~connection))]
+       ~@body))
+
+  (defmacro with-retry [[connection tx & {:keys [max-times] :or {max-times 1000}}] & body]
+    `(retry-times ~max-times
+       (fn []
+         (with-transaction ~connection ~tx ~@body)))))
