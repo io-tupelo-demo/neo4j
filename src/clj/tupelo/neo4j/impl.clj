@@ -1,4 +1,4 @@
-(ns tupelo.neo4j-impl
+(ns tupelo.neo4j.impl
   "This namespace contains the logic to connect to Neo4j instances,
   create and run queries as well as creating an in-memory database for
   testing."
