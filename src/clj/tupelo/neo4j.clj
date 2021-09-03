@@ -23,7 +23,7 @@
 (def ^:dynamic *neo4j-session* nil) ; #todo add earmuffs
 
 ; for debugging
-(def ^:dynamic *verbose* false) ; #todo add earmuffs
+(def ^:no-doc ^:dynamic *verbose* false) ; #todo add earmuffs
 
 ;-----------------------------------------------------------------------------
 (defn config [options]

@@ -18,8 +18,8 @@
       (neo4j/run "create or replace database neo4j") ; drop/recreate default db
 
       ; Sample:  (neo4j/info-map) => {:name "Neo4j Kernel" :version "4.3.3" :edition "enterprise"}
-      (is= (clip-str 2 (neo4j/neo4j-version)) "4.")
-      (is= (clip-str 2 (neo4j/apoc-version)) "4.")
+      (is= (str/clip 2 (neo4j/neo4j-version)) "4.")
+      (is= (str/clip 2 (neo4j/apoc-version)) "4.")
       (is (neo4j/apoc-installed?)) ; normally want this installed
 
       (let [create-user-cmd "CREATE (u:User $Params)  return u as newb"]

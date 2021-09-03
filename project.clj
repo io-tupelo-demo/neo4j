@@ -5,7 +5,7 @@
                       [org.neo4j.driver/neo4j-java-driver "4.1.1"]
                      ;[org.neo4j.driver/neo4j-java-driver "4.3.4"] ; #todo upgrade
                       [prismatic/schema "1.1.12"]
-                      [tupelo "21.07.08"]
+                      [tupelo "21.09.03"]
                      ]
   :plugins           [[com.jakemccrary/lein-test-refresh "0.24.1"]
                       [lein-ancient "0.7.0"]]
