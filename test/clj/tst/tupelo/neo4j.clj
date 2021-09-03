@@ -38,7 +38,7 @@
       ; use default db "neo4j"
       (neo4j/run "CREATE (u:Jedi $Hero)  return u as padawan"
         {:Hero {:first-name "Luke" :last-name "Skywalker"}})
-      (is= (vec (neo4j/run "match (n) return n as Jedi "))
+      (is= (neo4j/run "match (n) return n as Jedi ")
         [{:Jedi {:first-name "Luke", :last-name "Skywalker"}}])
 
       ; use "springfield" db (always coerced to lowercase by neo4j)
@@ -48,8 +48,8 @@
                {:Resident {:first-name "Homer" :last-name "Simpson"}}))
         {:Duffer {:first-name "Homer", :last-name "Simpson"}})
 
-      (is= (vec (neo4j/run "use SPRINGFIELD
-                                    match (n) return n as Dummy"))
+      (is= (neo4j/run "use SPRINGFIELD
+                                    match (n) return n as Dummy")
         [{:Dummy {:first-name "Homer", :last-name "Simpson"}}])
 
       (neo4j/run "drop database SpringField if exists"))

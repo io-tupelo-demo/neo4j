@@ -33,7 +33,7 @@
                                     RETURN collect(u) as ucoll, collect(s) as scoll"
                           {:name "Homer Simpson"}))
                 {:ucoll [homer]
-                 :scoll (list {:reason "to test"})})))
+                 :scoll [{:reason "to test"}]})))
 
         (testing "You can remove a user by name"
           (neo4j/run "MATCH (u:TestUser {name: $name})   DETACH DELETE u" {:name "Homer Simpson"}))

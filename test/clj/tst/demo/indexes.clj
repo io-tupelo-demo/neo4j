@@ -31,7 +31,7 @@
         (is= 3 (count (neo4j/nodes-all)))
 
         ; note return type :flick set by "return ... as ..."
-        (is-set= (vec (neo4j/run "MATCH (m:Movie) RETURN m as flick"))
+        (is-set= (neo4j/run "MATCH (m:Movie) RETURN m as flick")
           [{:flick {:title "The Matrix"}}
            {:flick {:title "Star Wars"}}
            {:flick {:title "Raiders"}}])
@@ -65,15 +65,15 @@
               (only (neo4j/indexes-user-details))))
 
         ; Adding a redundant index will be ignored due to pre-existing constraint index
-        (vec (neo4j/run "create index  idx_MovieTitle  if not exists
-                           for (m:Movie) on (m.title);"))
+        (neo4j/run "create index  idx_MovieTitle  if not exists
+                           for (m:Movie) on (m.title);")
         (is= (neo4j/indexes-user-names) ["cnstr_UniqueMovieTitle"])
 
         ; index never created, so it throws if we try to drop
-        (throws? (vec (neo4j/run "drop index  idx_MovieTitle ")))
+        (throws? (neo4j/run "drop index  idx_MovieTitle "))
 
         ; we can drop the constraint
-        (is= [] (vec (neo4j/run "drop constraint  cnstr_UniqueMovieTitle")))))
+        (is= [] (neo4j/run "drop constraint  cnstr_UniqueMovieTitle"))))
 
     ; Create an index, then a constraint & compare
     (neo4j/with-session
@@ -90,7 +90,7 @@
         (is= 3 (count (neo4j/nodes-all))))
 
       ; Adding an index works since no contraint
-      (vec (neo4j/run "create index  idx_MovieTitle  for (m:Movie) on (m.title);"))
+      (neo4j/run "create index  idx_MovieTitle  for (m:Movie) on (m.title);")
       (is= (neo4j/indexes-user-names) ["idx_MovieTitle"])
 
       ; cannot create a constraint if pre-existing index

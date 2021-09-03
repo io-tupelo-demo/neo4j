@@ -22,7 +22,6 @@
       (is= (clip-str 2 (neo4j/apoc-version)) "4.")
       (is (neo4j/apoc-installed?)) ; normally want this installed
 
-      ; tests consume all output within the session lifetime, so don't need `doall`, `vec`, or `unlazy`
       (let [create-user-cmd "CREATE (u:User $Params)  return u as newb"]
         (is= (neo4j/run create-user-cmd {:Params {:first-name "Luke" :last-name "Skywalker"}})
           [{:newb {:first-name "Luke" :last-name "Skywalker"}}])
@@ -32,7 +31,7 @@
           [{:newb {:first-name "Anakin" :last-name "Skywalker"}}])
         (is= 3 (count (neo4j/nodes-all))))
 
-      (is= (vec (neo4j/run "MATCH (u:User)  RETURN u as Jedi"))
+      (is= (neo4j/run "MATCH (u:User)  RETURN u as Jedi")
         [{:Jedi {:first-name "Luke" :last-name "Skywalker"}}
          {:Jedi {:first-name "Leia" :last-name "Organa"}}
          {:Jedi {:first-name "Anakin" :last-name "Skywalker"}}])

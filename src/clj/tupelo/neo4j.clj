@@ -83,9 +83,10 @@
 
 ;-----------------------------------------------------------------------------
 (s/defn run :- tsk/Vec
-  "Runs a neo4j cypher command.  Must be enclosed by a `(with-session ...)` form."
-  ([query       ] (conv/neo4j->clj (.run ^Session tupelo.neo4j/*neo4j-session* query)))
-  ([query params] (conv/neo4j->clj (.run ^Session tupelo.neo4j/*neo4j-session* query (conv/clj->neo4j params)))))
+  "Runs a neo4j cypher command, returning the result as a vector.
+   Must be enclosed by a `(with-session ...)` form. Not lazy."
+  ([query       ] (vec (conv/neo4j->clj (.run ^Session tupelo.neo4j/*neo4j-session* query))))
+  ([query params] (vec (conv/neo4j->clj (.run ^Session tupelo.neo4j/*neo4j-session* query (conv/clj->neo4j params))))))
 
 (s/defn info-map :- tsk/KeyMap
   [] (only (run "call dbms.components() yield name, versions, edition
