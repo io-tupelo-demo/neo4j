@@ -2,13 +2,17 @@
   (:use tupelo.core)
   (:require
     [schema.core :as s]
-    [tupelo.neo4j.impl :as neolib]
+    [tupelo.neo4j.conversion :as conv]
     [tupelo.schema :as tsk]
     [tupelo.set :as set]
     [tupelo.string :as str]
     )
   (:import
     [java.net URI]
+    [java.util.logging Level]
+    [org.neo4j.driver GraphDatabase AuthTokens Config AuthToken Driver Session]
+    [org.neo4j.driver.exceptions TransientException]
+    [org.neo4j.driver.internal.logging ConsoleLogging]
     ))
 
 ; A neo4j connection map with the driver under `:driver`
@@ -17,16 +21,41 @@
 
 ; a neo4j Session object
 (def ^:dynamic *neo4j-session* nil) ; #todo add earmuffs
-; Sample:
-;   #object[org.neo4j.driver.internal.InternalSession 0x2eba393 "org.neo4j.driver.internal.InternalSession@2eba393"]
 
 ; for debugging
 (def ^:dynamic *verbose* false) ; #todo add earmuffs
 
 ;-----------------------------------------------------------------------------
+(defn config [options]
+  (let [logging (:logging options (ConsoleLogging. Level/CONFIG))]
+    (-> (Config/builder)
+      (.withLogging logging)
+      (.build))))
+
+(s/defn get-driver :- Driver
+  "Returns a Neo4j Driver from an URI. Uses BOLT as the only communication protocol.
+
+   You can connect using a URI or a URI, user, password combination.
+   Either way, you can optioninally pass a map of options:
+
+  `:logging`   - a Neo4j logging configuration, e.g. (ConsoleLogging. Level/FINEST)"
+  ([uri user password] (get-driver uri user password nil))
+  ([uri user password options]
+   (let [auth   (AuthTokens/basic user password)
+         config (config options)
+         driver (GraphDatabase/driver ^URI uri ^AuthToken auth ^Config config)]
+     driver))
+
+  ([uri] (get-driver uri nil))
+  ([uri options]
+   (let [config (config options)
+         driver (GraphDatabase/driver ^URI uri ^Config config)]
+     driver)))
+
+;-----------------------------------------------------------------------------
 (defn ^:no-doc with-driver-impl
   [[uri user pass & forms]]
-  `(binding [tupelo.neo4j/*neo4j-driver* (neolib/connect (URI. ~uri) ~user ~pass)]
+  `(binding [tupelo.neo4j/*neo4j-driver* (get-driver (URI. ~uri) ~user ~pass)]
      (with-open [n4driver# tupelo.neo4j/*neo4j-driver*]
        (when *verbose* (spy :with-driver-impl--enter n4driver#))
        ~@forms
@@ -40,7 +69,7 @@
 ;-----------------------------------------------------------------------------
 (defn ^:no-doc with-session-impl
   [forms]
-  `(binding [tupelo.neo4j/*neo4j-session* (neolib/get-session tupelo.neo4j/*neo4j-driver*)]
+  `(binding [tupelo.neo4j/*neo4j-session* (.session tupelo.neo4j/*neo4j-driver*)]
      (with-open [n4session# tupelo.neo4j/*neo4j-session*]
        (when *verbose* (spy :sess-open-enter--enter n4session#))
        ~@forms
@@ -49,20 +78,19 @@
 (defmacro with-session
   "Creates a Neo4j session object (cached as `*neo4j-session*`) for use by the enclosed forms.
   Must be enclosed by a `(with-driver ...)` form."
-  [& args]
-  (with-session-impl args))
+  [& forms]
+  (with-session-impl forms))
 
 ;-----------------------------------------------------------------------------
 (s/defn run :- tsk/Vec
   "Runs a neo4j cypher command.  Must be enclosed by a `(with-session ...)` form."
-  [query & args] (apply neolib/session-run tupelo.neo4j/*neo4j-session* query args))
+  ([query       ] (conv/neo4j->clj (.run ^Session tupelo.neo4j/*neo4j-session* query)))
+  ([query params] (conv/neo4j->clj (.run ^Session tupelo.neo4j/*neo4j-session* query (conv/clj->neo4j params)))))
 
 (s/defn info-map :- tsk/KeyMap
-  []
-  (only (run
-          "call dbms.components() yield name, versions, edition
-           unwind versions as version
-           return name, version, edition ;")))
+  [] (only (run "call dbms.components() yield name, versions, edition
+                 unwind versions as version
+                 return name, version, edition ;")))
 
 (s/defn neo4j-version :- s/Str
   [] (grab :version (info-map)))

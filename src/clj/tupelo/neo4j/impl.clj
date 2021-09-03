@@ -3,7 +3,7 @@
   create and run queries as well as creating an in-memory database for
   testing."
   (:require
-    [neo4j-clj.conversion :as conv]
+    [schema.core :as s]
   )
   (:import
     [java.net URI]
@@ -12,45 +12,6 @@
     [org.neo4j.driver.exceptions TransientException]
     [org.neo4j.driver.internal.logging ConsoleLogging]
   ))
-
-(defn config [options]
-  (let [logging (:logging options (ConsoleLogging. Level/CONFIG))]
-    (-> (Config/builder)
-        (.withLogging logging)
-        (.build))))
-
-(defn connect
-  "Returns a connection map from an url. Uses BOLT as the only communication protocol.
-
-   You can connect using a url or a url, user, password combination.
-   Either way, you can optioninally pass a map of options:
-
-  `:logging`   - a Neo4j logging configuration, e.g. (ConsoleLogging. Level/FINEST)"
-  ([^URI uri user password] (connect uri user password nil))
-  ([^URI uri user password options]
-   (let [^AuthToken auth (AuthTokens/basic user password)
-         ^Config config  (config options)
-         driver          (GraphDatabase/driver uri auth config)]
-     driver))
-
-  ([^URI uri] (connect uri nil))
-  ([^URI uri options]
-   (let [^Config config (config options)
-         driver         (GraphDatabase/driver uri, config)]
-      driver)))
-
-(defn disconnect [db]
-  "Disconnect a connection"
-  ((:destroy-fn db)))
-
-;-----------------------------------------------------------------------------
-(defn get-session
-  [^Driver connection]
-  (.session connection))
-
-(defn session-run
-  ([sess query] (conv/neo4j->clj (.run sess query)))
-  ([sess query params] (conv/neo4j->clj (.run sess query (conv/clj->neo4j params)))))
 
 ; obsolete code from the orig lib
 (comment

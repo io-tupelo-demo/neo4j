@@ -1,28 +1,29 @@
-(ns neo4j-clj.conversion
+(ns tupelo.neo4j.conversion
   "Neo4j communicates with Java via custom data structures. Those are
    can contain lists, maps, nulls, values or combinations. This namespace
    has functions to help to convert between Neo4j's data structures and Clojure"
-  (:require [clojure.walk])
+  (:require
+    [clojure.walk :as walk])
   (:import
     [clojure.lang ISeq]
     [java.util Map List]
 
     [org.neo4j.driver Values]
     [org.neo4j.driver.internal
-      InternalNode InternalResult
-      InternalPair
-      InternalRecord
-      InternalRelationship]
+     InternalNode InternalResult
+     InternalPair
+     InternalRecord
+     InternalRelationship]
     [org.neo4j.driver.internal.value
-      BooleanValue
-      ListValue
-      MapValue
-      NodeValue
-      NullValue
-      NumberValueAdapter
-      ObjectValueAdapter
-      RelationshipValue
-      StringValue]
+     BooleanValue
+     ListValue
+     MapValue
+     NodeValue
+     NullValue
+     NumberValueAdapter
+     ObjectValueAdapter
+     RelationshipValue
+     StringValue]
     ))
 
 (defn clj->neo4j
@@ -32,33 +33,33 @@
   a `Values.parameters` instance which expects the values as an `Object` array"
   [val]
   (->> val
-       clojure.walk/stringify-keys
-       (mapcat identity)
-       (into-array Object)
-       Values/parameters))
+    walk/stringify-keys
+    (mapcat identity)
+    (into-array Object)
+    Values/parameters))
 
+;---------------------------------------------------------------------------------------------------
 (defmulti neo4j->clj
-          "## Convert from Neo4j
+  "## Convert from Neo4j
 
-           Neo4j returns results as `StatementResults`, which contain `InternalRecords`,
-           which contain `InternalPairs` etc. Therefore, this multimethod recursively
-           calls itself with the extracted content of the data structure until we have
-           values, lists or `nil`."
-          class)
+   Neo4j returns results as `StatementResults`, which contain `InternalRecords`,
+   which contain `InternalPairs` etc. Therefore, this multimethod recursively
+   calls itself with the extracted content of the data structure until we have
+   values, lists or `nil`."
+  class)
 
-(defn transform [m]
+(defn walk-transform [m]
   (let [f (fn [[k v]]
             [(if (string? k)
                (keyword k)
                k)
              (neo4j->clj v)])]
-
-    ; only apply to maps
-    (clojure.walk/postwalk
+    ; applies only to maps
+    (walk/postwalk
       (fn [x]
         (if (or (map? x) (instance? Map x))
           (with-meta (into {} (map f x))
-                     (meta x))
+            (meta x))
           x))
       m)))
 
@@ -74,10 +75,10 @@
     {k v}))
 
 (defmethod neo4j->clj NodeValue [^NodeValue value]
-  (transform (into {} (.asMap value))))
+  (walk-transform (into {} (.asMap value))))
 
 (defmethod neo4j->clj RelationshipValue [^RelationshipValue value]
-  (transform (into {} (.asMap (.asRelationship value)))))
+  (walk-transform (into {} (.asMap (.asRelationship value)))))
 
 (defmethod neo4j->clj StringValue [^StringValue v]
   (.asObject v))
@@ -98,12 +99,12 @@
   (map neo4j->clj s))
 
 (defmethod neo4j->clj MapValue [^MapValue l]
-  (transform (into {} (.asMap l))))
+  (walk-transform (into {} (.asMap l))))
 
 (defmethod neo4j->clj InternalNode [^InternalNode n]
-  (with-meta (transform (into {} (.asMap n)))
-             {:labels (.labels n)
-              :id     (.id n)}))
+  (with-meta (walk-transform (into {} (.asMap n)))
+    {:labels (.labels n)
+     :id     (.id n)}))
 
 (defmethod neo4j->clj InternalRelationship [^InternalRelationship r]
   (neo4j->clj (.asValue r)))
@@ -115,7 +116,7 @@
   (map neo4j->clj (into [] l)))
 
 (defmethod neo4j->clj Map [^Map m]
-  (transform (into {} m)))
+  (walk-transform (into {} m)))
 
 (defmethod neo4j->clj :default [x]
   x)
