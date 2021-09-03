@@ -1,17 +1,10 @@
 (ns neo4j-clj.core-test
-  (:use tupelo.core)
+  (:use tupelo.core tupelo.test)
   (:require
-    [clojure.test :refer :all]
-    ; [tupelo.neo4j.impl :as neolib ]
     [tupelo.neo4j :as neo4j]
     [tupelo.profile :as prof]
     )
-  (:import
-    [org.neo4j.driver.exceptions TransientException]
-    ))
-
-(def get-test-users-by-name-cmd
-  "MATCH (u:TestUser {name: $name}) RETURN u.name as name, u.role as role, u.age as age, u.smokes as smokes")
+  )
 
 (def dummy-user
   {:name "MyTestUser" :role "Dummy" :age 42 :smokes true})
@@ -19,13 +12,8 @@
 (def name-lookup
   {:name (:name dummy-user)})
 
-(defn with-temp-db
-  [tests]
-  (prof/with-timer-print :with-temp-db
-    (tests)
-    ))
-
-(use-fixtures :once with-temp-db)
+(def get-test-users-by-name-cmd
+  "MATCH (u:TestUser {name: $name}) RETURN u.name as name, u.role as role, u.age as age, u.smokes as smokes")
 
 ; Simple CRUD
 (deftest create-get-delete-user
@@ -61,32 +49,36 @@
 ; Old (orig) tests.  Rewrite instead of adapting.
 ;(comment
 ;
+;  #todo add to ns form
+;  (:import [org.neo4j.driver.exceptions TransientException])
+;  (require: [tupelo.neo4j.impl :as impl ] ...
+;
 ;  ; Cypher exceptions
 ;  (deftest invalid-cypher-does-throw
 ;    (prof/with-timer-print :invalid-cypher-does-throw
-;      (with-open [session (neolib/get-session temp-db)]
+;      (with-open [session (impl/get-session temp-db)]
 ;        (testing "An invalid cypher query does trigger an exception"
-;          (is (thrown? Exception (neolib/execute session "INVALID!!§$/%&/(")))))))
+;          (is (thrown? Exception (impl/execute session "INVALID!!§$/%&/(")))))))
 ;
 ;  ; Transactions
 ;  (deftest transactions-do-commit
 ;    (prof/with-timer-print :transactions-do-commit
 ;      (testing "If using a transaction, writes are persistet"
-;        (neolib/with-transaction temp-db tx
-;          (neolib/execute tx "CREATE (x:test $t)" {:t {:payload 42}})))
+;        (impl/with-transaction temp-db tx
+;          (impl/execute tx "CREATE (x:test $t)" {:t {:payload 42}})))
 ;
 ;      (testing "If using a transaction, writes are persistet"
-;        (neolib/with-transaction temp-db tx
-;          (is (= (neolib/execute tx "MATCH (x:test) RETURN x")
+;        (impl/with-transaction temp-db tx
+;          (is (= (impl/execute tx "MATCH (x:test) RETURN x")
 ;                '({:x {:payload 42}})))))
 ;
 ;      (testing "If using a transaction, writes are persistet"
-;        (neolib/with-transaction temp-db tx
-;          (neolib/execute tx "MATCH (x:test) DELETE x" {:t {:payload 42}})))
+;        (impl/with-transaction temp-db tx
+;          (impl/execute tx "MATCH (x:test) DELETE x" {:t {:payload 42}})))
 ;
 ;      (testing "If using a transaction, writes are persistet"
-;        (neolib/with-transaction temp-db tx
-;          (is (= (neolib/execute tx "MATCH (x:test) RETURN x")
+;        (impl/with-transaction temp-db tx
+;          (is (= (impl/execute tx "MATCH (x:test) RETURN x")
 ;                '()))))))
 ;
 ;  ; Retry
@@ -95,17 +87,17 @@
 ;      (testing "When a deadlock occures,"
 ;        (testing "the transaction throws an Exception"
 ;          (is (thrown? TransientException
-;                (neolib/with-transaction temp-db tx
+;                (impl/with-transaction temp-db tx
 ;                  (throw (TransientException. "" "I fail"))))))
 ;        (testing "the retried transaction works"
 ;          (let [fail-times (atom 3)]
 ;            (is (= :result
-;                  (neolib/with-retry [temp-db tx]
+;                  (impl/with-retry [temp-db tx]
 ;                    (if (pos? @fail-times)
 ;                      (do (swap! fail-times dec)
 ;                          (throw (TransientException. "" "I fail")))
 ;                      :result))))))
 ;        (testing "the retried transaction throws after max retries"
 ;          (is (thrown? TransientException
-;                (neolib/with-retry [temp-db tx]
+;                (impl/with-retry [temp-db tx]
 ;                  (throw (TransientException. "" "I fail"))))))))))
