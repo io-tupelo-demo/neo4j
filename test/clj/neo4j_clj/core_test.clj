@@ -3,17 +3,20 @@
   (:require
     [tupelo.neo4j :as neo4j]
     [tupelo.profile :as prof]
-    )
-  )
+    ))
 
 (def dummy-user
   {:name "MyTestUser" :role "Dummy" :age 42 :smokes true})
 
-(def name-lookup
-  {:name (:name dummy-user)})
+(def user-name-map
+  {:name "MyTestUser"})
 
 (def get-test-users-by-name-cmd
-  "MATCH (u:TestUser {name: $name}) RETURN u.name as name, u.role as role, u.age as age, u.smokes as smokes")
+  "MATCH (u:TestUser {name: $name})
+     RETURN u.name as name,
+            u.role as role,
+            u.age as age,
+            u.smokes as smokes")
 
 ; Simple CRUD
 (deftest create-get-delete-user
@@ -25,24 +28,25 @@
       (neo4j/with-session
 
         (testing "You can create a new user with neo4j"
-          (neo4j/run   "CREATE (u:TestUser $user)-[:SELF {reason: \"to test\"}]->(u)"
-            {:user dummy-user}))
+          (neo4j/run   "CREATE (u:TestUser $params)-[:SELF {reason: \"to test\"}]->(u)"
+            {:params dummy-user}))
 
         (testing "You can get a created user by name"
-          (is (= (neo4j/run   get-test-users-by-name-cmd name-lookup)
-                (list dummy-user))))
+          (is (= (only (neo4j/run get-test-users-by-name-cmd user-name-map))
+                dummy-user)))
 
         (testing "You can get a relationship"
-          (is (= (first (neo4j/run   "MATCH (u:TestUser {name: $name})-[s:SELF]->() RETURN collect(u) as ucoll, collect(s) as scoll"
-                          name-lookup))
-                {:ucoll (list dummy-user) :scoll (list {:reason "to test"})})))
+          (is (= (first (neo4j/run "MATCH (u:TestUser {name: $name})-[s:SELF]->()
+                                      RETURN collect(u) as ucoll, collect(s) as scoll"
+                          user-name-map))
+                {:ucoll [dummy-user]
+                 :scoll (list {:reason "to test"})})))
 
         (testing "You can remove a user by name"
-          (neo4j/run   "MATCH (u:TestUser {name: $name}) DETACH DELETE u" name-lookup))
+          (neo4j/run   "MATCH (u:TestUser {name: $name})   DETACH DELETE u" user-name-map))
 
         (testing "Removed users can't be retrieved"
-          (is (= [] (neo4j/run   get-test-users-by-name-cmd
-                      name-lookup))))
+          (is (= [] (neo4j/run   get-test-users-by-name-cmd user-name-map))))
 
         ))))
 
