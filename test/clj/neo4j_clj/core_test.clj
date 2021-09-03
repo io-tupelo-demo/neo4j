@@ -2,7 +2,7 @@
   (:use tupelo.core)
   (:require
     [clojure.test :refer :all]
-    ; [neo4j-clj.core :as neolib ]
+    ; [neo4j-clj.neo4j-impl :as neolib ]
     [tupelo.neo4j :as neo4j]
     [tupelo.profile :as prof]
     )
@@ -59,53 +59,53 @@
         ))))
 
 ; Old (orig) tests.  Rewrite instead of adapting.
-(comment
-
-  ; Cypher exceptions
-  (deftest invalid-cypher-does-throw
-    (prof/with-timer-print :invalid-cypher-does-throw
-      (with-open [session (neolib/get-session temp-db)]
-        (testing "An invalid cypher query does trigger an exception"
-          (is (thrown? Exception (neolib/execute session "INVALID!!§$/%&/(")))))))
-
-  ; Transactions
-  (deftest transactions-do-commit
-    (prof/with-timer-print :transactions-do-commit
-      (testing "If using a transaction, writes are persistet"
-        (neolib/with-transaction temp-db tx
-          (neolib/execute tx "CREATE (x:test $t)" {:t {:payload 42}})))
-
-      (testing "If using a transaction, writes are persistet"
-        (neolib/with-transaction temp-db tx
-          (is (= (neolib/execute tx "MATCH (x:test) RETURN x")
-                '({:x {:payload 42}})))))
-
-      (testing "If using a transaction, writes are persistet"
-        (neolib/with-transaction temp-db tx
-          (neolib/execute tx "MATCH (x:test) DELETE x" {:t {:payload 42}})))
-
-      (testing "If using a transaction, writes are persistet"
-        (neolib/with-transaction temp-db tx
-          (is (= (neolib/execute tx "MATCH (x:test) RETURN x")
-                '()))))))
-
-  ; Retry
-  (deftest deadlocks-fail
-    (prof/with-timer-print :deadlocks-fail
-      (testing "When a deadlock occures,"
-        (testing "the transaction throws an Exception"
-          (is (thrown? TransientException
-                (neolib/with-transaction temp-db tx
-                  (throw (TransientException. "" "I fail"))))))
-        (testing "the retried transaction works"
-          (let [fail-times (atom 3)]
-            (is (= :result
-                  (neolib/with-retry [temp-db tx]
-                    (if (pos? @fail-times)
-                      (do (swap! fail-times dec)
-                          (throw (TransientException. "" "I fail")))
-                      :result))))))
-        (testing "the retried transaction throws after max retries"
-          (is (thrown? TransientException
-                (neolib/with-retry [temp-db tx]
-                  (throw (TransientException. "" "I fail"))))))))))
+;(comment
+;
+;  ; Cypher exceptions
+;  (deftest invalid-cypher-does-throw
+;    (prof/with-timer-print :invalid-cypher-does-throw
+;      (with-open [session (neolib/get-session temp-db)]
+;        (testing "An invalid cypher query does trigger an exception"
+;          (is (thrown? Exception (neolib/execute session "INVALID!!§$/%&/(")))))))
+;
+;  ; Transactions
+;  (deftest transactions-do-commit
+;    (prof/with-timer-print :transactions-do-commit
+;      (testing "If using a transaction, writes are persistet"
+;        (neolib/with-transaction temp-db tx
+;          (neolib/execute tx "CREATE (x:test $t)" {:t {:payload 42}})))
+;
+;      (testing "If using a transaction, writes are persistet"
+;        (neolib/with-transaction temp-db tx
+;          (is (= (neolib/execute tx "MATCH (x:test) RETURN x")
+;                '({:x {:payload 42}})))))
+;
+;      (testing "If using a transaction, writes are persistet"
+;        (neolib/with-transaction temp-db tx
+;          (neolib/execute tx "MATCH (x:test) DELETE x" {:t {:payload 42}})))
+;
+;      (testing "If using a transaction, writes are persistet"
+;        (neolib/with-transaction temp-db tx
+;          (is (= (neolib/execute tx "MATCH (x:test) RETURN x")
+;                '()))))))
+;
+;  ; Retry
+;  (deftest deadlocks-fail
+;    (prof/with-timer-print :deadlocks-fail
+;      (testing "When a deadlock occures,"
+;        (testing "the transaction throws an Exception"
+;          (is (thrown? TransientException
+;                (neolib/with-transaction temp-db tx
+;                  (throw (TransientException. "" "I fail"))))))
+;        (testing "the retried transaction works"
+;          (let [fail-times (atom 3)]
+;            (is (= :result
+;                  (neolib/with-retry [temp-db tx]
+;                    (if (pos? @fail-times)
+;                      (do (swap! fail-times dec)
+;                          (throw (TransientException. "" "I fail")))
+;                      :result))))))
+;        (testing "the retried transaction throws after max retries"
+;          (is (thrown? TransientException
+;                (neolib/with-retry [temp-db tx]
+;                  (throw (TransientException. "" "I fail"))))))))))

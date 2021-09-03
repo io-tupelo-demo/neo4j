@@ -1,7 +1,7 @@
 (ns tupelo.neo4j
   (:use tupelo.core)
   (:require
-    [neo4j-clj.core :as neolib]
+    [neo4j-clj.neo4j-impl :as neolib]
     [schema.core :as s]
     [tupelo.set :as set]
     [tupelo.string :as str]
