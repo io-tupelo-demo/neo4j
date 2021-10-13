@@ -11,10 +11,9 @@
 
     (neo4j/with-session
       (let [vinfo (neo4j/info-map)]
-        ; example:  {:name "Neo4j Kernel" :version "4.2-aura" :edition "enterprise"}
-        ; example:  {:name "Neo4j Kernel" :version "4.3.3" :edition "enterprise"}
+        ; sample vinfo:  {:name "Neo4j Kernel" :version "4.2-aura" :edition "enterprise"}
+        ; sample vinfo:  {:name "Neo4j Kernel" :version "4.3.3" :edition "enterprise"}
         (with-map-vals vinfo [name version edition]
-          (spyx-pretty vinfo)
           (is= name "Neo4j Kernel")
           (is= edition "enterprise")
           (is (str/increasing-or-equal? "4.2" version))))

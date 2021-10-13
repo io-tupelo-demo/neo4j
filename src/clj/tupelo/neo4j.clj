@@ -89,11 +89,13 @@
   ([query params] (vec (conv/neo4j->clj (.run ^Session tupelo.neo4j/*neo4j-session* query (conv/clj->neo4j params))))))
 
 (s/defn info-map :- tsk/KeyMap
+  "Returns a map describing the current Neo4j installation"
   [] (only (run "call dbms.components() yield name, versions, edition
                  unwind versions as version
                  return name, version, edition ;")))
 
 (s/defn neo4j-version :- s/Str
+  "Retuns the Neo4j version string"
   [] (grab :version (info-map)))
 
 ;-----------------------------------------------------------------------------
@@ -111,6 +113,7 @@
       "*** APOC not installed ***")))
 
 (s/defn apoc-installed? :- s/Bool
+  "Returns `true` iff APOC plugin is installed"
   []
   (try
     (let [version-str (apoc-version-impl)]
@@ -120,10 +123,12 @@
       false))) ; it threw, so assume not installed
 
 (s/defn nodes-all :- tsk/Vec
+  "Returns a vector of all nodes in the DB"
   [] (vec (run "match (n) return n as node;")))
 
 ;-----------------------------------------------------------------------------
 (s/defn db-names-all :- [s/Str]
+  "Returns the names of all databases present"
   []
   (mapv #(grab :name %) (run "show databases")))
 
@@ -159,47 +164,59 @@
          (extraneous-index? idx-map))))
 
 (s/defn indexes-all-details :- [tsk/KeyMap]
+  "Returns details for all indexes"
   [] (vec (run "show indexes;")))
 
 (s/defn indexes-user-details :- [tsk/KeyMap]
+  "Returns details for all user indexes"
   []
   (keep-if #(user-index? %) (indexes-all-details)))
 
 (s/defn indexes-user-names :- [s/Str]
+  "Returns the names of all user indexes"
   []
   (mapv #(grab :name %) (indexes-user-details)))
 
-(s/defn indexes-drop!
+(s/defn index-drop!
+  "Drops an index by name"
   [idx-name]
   (run (format "drop index %s if exists" idx-name)))
 
 (s/defn indexes-drop-all!
+  "Drops all user indexes"
   []
   (doseq [idx-map (indexes-user-details)]
-    (indexes-drop! (grab :name idx-map))))
+    (index-drop! (grab :name idx-map))))
 
 ;-----------------------------------------------------------------------------
 (s/defn constraints-all-details :- [tsk/KeyMap]
+  "Returns details for all constraints"
   [] (vec (run "show all constraints;")))
 
 (s/defn constraints-all-names :- [s/Str]
+  "Returns the names of all constraints"
   [] (mapv #(grab :name %) (constraints-all-details)))
 
 (s/defn constraint-drop!
+  "Drops a constraint by name"
   [cnstr-name]
   (run (format "drop constraint %s if exists" cnstr-name)))
 
 (s/defn constraints-drop-all!
+  "Drops all constraints"
   []
   (doseq [cnstr-name (constraints-all-names)]
     (constraint-drop! cnstr-name)))
 
 ;-----------------------------------------------------------------------------
-(defn delete-all-nodes-simple! ; works, but could overflow jvm heap for large db's
+(defn delete-all-nodes-simple!
+  "Drops all nodes in the DB.  works, but could overflow jvm heap for large db's "
   []
   (vec (run "match (n) detach delete n;")))
 
-(defn delete-all-nodes-apoc! ; APOC function works in batches - safe for large db's
+(defn delete-all-nodes-apoc!
+  "Drops all nodes in the DB.  Uses function `apoc.periodic.iterate` to work in batches.
+  Safe for large DBs."
   []
   (vec (run
          (str/quotes->double

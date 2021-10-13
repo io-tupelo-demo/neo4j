@@ -5,7 +5,5 @@
     ))
 
 (def neo4j-uri (environ/env :neo4j-uri))
-(def neo4j-user (environ/env     :neo4j-user))
+(def neo4j-user (environ/env :neo4j-user))
 (def neo4j-password (environ/env :neo4j-password))
-
-
