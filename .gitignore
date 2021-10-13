@@ -39,5 +39,6 @@ pom.xml
 pom.xml.asc
 profiles.clj
 profiles-cloojure.clj
+profiles-lg.clj
 tags
 target
