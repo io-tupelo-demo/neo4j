@@ -95,9 +95,7 @@
         ]
     (is= [false true true] (mapv neo4j/extraneous-index? sample-idxs))
     (is= [false false true] (mapv neo4j/internal-index? sample-idxs))
-    (is= [true false false] (mapv neo4j/user-index? sample-idxs))
-
-    ))
+    (is= [true false false] (mapv neo4j/user-index? sample-idxs))))
 
 ;-----------------------------------------------------------------------------
 #_(dotest
