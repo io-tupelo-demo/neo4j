@@ -25,15 +25,20 @@
     (neo4j/with-session
       (neo4j/drop-extraneous-dbs!)
 
-      ; "system" db is always present
-      ; "neo4j" db is default name
+      ; "system" db is always present.  "neo4j" db is default DB name
       (is-set= (neo4j/db-names-all) #{"system" "neo4j"})
 
       (neo4j/run "create or replace database neo4j") ; drop/recreate default db
       (neo4j/run "create or replace database SPRINGFIELD") ; make a new DB
-      ; NOTE: For some reason cannot get `.` (dot) to work in name. Underscore `_` is illegal for DB name
 
-      (is-set= (neo4j/db-names-all) #{"system" "neo4j" "springfield"}) ; NOTE:  all lowercase
+      ; NOTE: Dot `.` is legal a char in a DB name.
+      (neo4j/run "create or replace database some.hierarchical.db.name")
+
+      ; NOTE: Underscore `_` & hyphen `-` are illegal chars in DB name
+      (throws? (neo4j/run "create or replace database SPRING-FIELD"))
+      (throws? (neo4j/run "create or replace database SPRING_FIELD"))
+
+      (is-set= (neo4j/db-names-all) #{"system" "neo4j" "springfield" "some.hierarchical.db.name"}) ; NOTE:  all lowercase
 
       ; use default db "neo4j"
       (neo4j/run "CREATE (u:Jedi $Hero)  return u as padawan"
@@ -41,19 +46,20 @@
       (is= (neo4j/run "match (n) return n as Jedi ")
         [{:Jedi {:first-name "Luke", :last-name "Skywalker"}}])
 
-      ; use "springfield" db (always coerced to lowercase by neo4j)
-      (is= (only
-             (neo4j/run "use Springfield
+      ; use "springfield" db (DB name always coerced to lowercase by neo4j)
+      (is= (only ; CamelCase DB name works
+             (neo4j/run "use SpringField
                           create (p:Person $Resident) return p as Duffer" ; `as Duffer` => returned map key
                {:Resident {:first-name "Homer" :last-name "Simpson"}}))
         {:Duffer {:first-name "Homer", :last-name "Simpson"}})
 
+      ; SCREAMINGCASE DB name works
       (is= (neo4j/run "use SPRINGFIELD
                         match (n) return n as Dummy")
         [{:Dummy {:first-name "Homer", :last-name "Simpson"}}])
 
-      (neo4j/run "drop database SpringField if exists"))
-    ))
+      (neo4j/run "drop database SpringField if exists")
+      )))
 
 (comment
   (neo4j/delete-all-nodes!)
