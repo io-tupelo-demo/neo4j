@@ -1,15 +1,14 @@
 (ns tst.demo.core
   (:use tupelo.core tupelo.test)
   (:require
+    [tupelo.config :as config]
     [tupelo.neo4j :as neo4j]
-    [tupelo.set :as set]
     [tupelo.string :as str]
     ))
 
 (dotest   ; -focus
   (neo4j/with-driver  ; this is URI/username/password (not uri/db/pass!)
-    "bolt://localhost:7687" "neo4j" "secret"
-    ; "neo4j+s://4ca9bb9b.databases.neo4j.io" "neo4j" "g6o2KIftFE6EIYMUCIY9a6DW0oVcwihh7m0Z5DP-jcY"
+    config/neo4j-uri config/neo4j-user config/neo4j-password
 
     ; Using a session
     (neo4j/with-session

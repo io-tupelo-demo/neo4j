@@ -1,6 +1,7 @@
 (ns neo4j-clj.core-test
   (:use tupelo.core tupelo.test)
   (:require
+    [tupelo.config :as config]
     [tupelo.neo4j :as neo4j]
     [tupelo.string :as str]
     ))
@@ -8,7 +9,7 @@
 ; Simple CRUD
 (deftest create-get-delete-user
   (neo4j/with-driver ; this is URI/username/password (not uri/db/pass!)
-    "bolt://localhost:7687" "neo4j" "secret"
+    config/neo4j-uri config/neo4j-user config/neo4j-password
 
     (neo4j/with-session
       (neo4j/drop-extraneous-dbs!) ; drop all but "system" and "neo4j" DB's

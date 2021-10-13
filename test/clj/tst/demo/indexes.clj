@@ -2,14 +2,14 @@
   (:use tupelo.core tupelo.test)
   (:require
     [schema.core :as s]
+    [tupelo.config :as config]
     [tupelo.neo4j :as neo4j]
     [tupelo.string :as str]
     [tupelo.schema :as tsk]))
 
 (dotest   ; -focus
   (neo4j/with-driver ; this is URI/username/password (not uri/db/pass!)
-    "bolt://localhost:7687" "neo4j" "secret"
-    ; "neo4j+s://4ca9bb9b.databases.neo4j.io" "neo4j" "g6o2KIftFE6EIYMUCIY9a6DW0oVcwihh7m0Z5DP-jcY"
+    config/neo4j-uri config/neo4j-user config/neo4j-password
 
     ; Create a constraint, then an index & compare
     (neo4j/with-session

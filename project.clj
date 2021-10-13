@@ -1,14 +1,17 @@
 (defproject demo "0.1.0-SNAPSHOT"
   :dependencies      [
                       [clj-time "0.15.2"]
+                      [environ "1.2.0"]
                       [org.clojure/clojure "1.10.3"]
                       [org.neo4j.driver/neo4j-java-driver "4.1.1"]
                      ;[org.neo4j.driver/neo4j-java-driver "4.3.4"] ; #todo upgrade
                       [prismatic/schema "1.1.12"]
-                      [tupelo "21.09.03"]
+                      [tupelo "21.10.06b"]
                      ]
   :plugins           [[com.jakemccrary/lein-test-refresh "0.24.1"]
-                      [lein-ancient "0.7.0"]]
+                      [lein-ancient "0.7.0"]
+                      [lein-environ "1.2.0"]
+                      ]
 
   :global-vars       {*warn-on-reflection* false}
   :main              ^:skip-aot demo.core

@@ -1,20 +1,22 @@
 (ns tst.tupelo.neo4j
   (:use tupelo.core tupelo.test)
   (:require
-    [schema.core :as s]
+    [tupelo.config :as config]
     [tupelo.neo4j :as neo4j]
-    [tupelo.set :as set]
     [tupelo.string :as str]
     ))
 
-(dotest   ; -focus
-  (neo4j/with-driver "bolt://localhost:7687" "neo4j" "secret" ; url/username/password
+(dotest-focus
+  (neo4j/with-driver ; uri/username/password
+    config/neo4j-uri config/neo4j-user config/neo4j-password
+
     (neo4j/with-session
 
       (let [vinfo (neo4j/info-map)]
         ; example:  {:name "Neo4j Kernel" :version "4.2-aura" :edition "enterprise"}
         ; example:  {:name "Neo4j Kernel" :version "4.3.3" :edition "enterprise"}
         (with-map-vals vinfo [name version edition]
+          (spyx-pretty vinfo)
           (is= name "Neo4j Kernel")
           (is= edition "enterprise")
           (is (str/increasing-or-equal? "4.2" version))))
