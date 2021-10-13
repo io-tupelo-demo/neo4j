@@ -8,8 +8,7 @@
     [tupelo.schema :as tsk]))
 
 (dotest   ; -focus
-  (neo4j/with-driver ; this is URI/username/password (not uri/db/pass!)
-    config/neo4j-uri config/neo4j-user config/neo4j-password
+  (neo4j/with-driver config/neo4j-uri config/neo4j-user config/neo4j-password  ; URI/username/password
 
     ; Create a constraint, then an index & compare
     (neo4j/with-session
@@ -25,9 +24,9 @@
                            (neo4j/run "CREATE (m:Movie $Data)   return m as film" m))]
 
         ; note return type :film set by "return ... as ..."
-        (is= (create-movie {:Data {:title "The Matrix"}}) [{:film {:title "The Matrix"}}])
-        (is= (create-movie {:Data {:title "Star Wars"}}) [{:film {:title "Star Wars"}}])
-        (is= (create-movie {:Data {:title "Raiders"}}) [{:film {:title "Raiders"}}])
+        (is= [{:film {:title "The Matrix"}}] (create-movie {:Data {:title "The Matrix"}}))
+        (is= [{:film {:title "Star Wars"}}] (create-movie {:Data {:title "Star Wars"}}))
+        (is= [{:film {:title "Raiders"}}] (create-movie {:Data {:title "Raiders"}}))
         (is= 3 (count (neo4j/nodes-all)))
 
         ; note return type :flick set by "return ... as ..."
@@ -84,9 +83,9 @@
                            (neo4j/run "CREATE (m:Movie $Data)   return m as film" m))]
 
         ; note return type :film set by "return ... as ..."
-        (is= (create-movie {:Data {:title "The Matrix"}}) [{:film {:title "The Matrix"}}])
-        (is= (create-movie {:Data {:title "Star Wars"}}) [{:film {:title "Star Wars"}}])
-        (is= (create-movie {:Data {:title "Raiders"}}) [{:film {:title "Raiders"}}])
+        (is= [{:film {:title "The Matrix"}}] (create-movie {:Data {:title "The Matrix"}}))
+        (is= [{:film {:title "Star Wars"}}] (create-movie {:Data {:title "Star Wars"}}))
+        (is= [{:film {:title "Raiders"}}] (create-movie {:Data {:title "Raiders"}}))
         (is= 3 (count (neo4j/nodes-all))))
 
       ; Adding an index works since no contraint

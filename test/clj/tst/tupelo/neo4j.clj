@@ -6,12 +6,10 @@
     [tupelo.string :as str]
     ))
 
-(dotest-focus
-  (neo4j/with-driver ; uri/username/password
-    config/neo4j-uri config/neo4j-user config/neo4j-password
+(dotest
+  (neo4j/with-driver config/neo4j-uri config/neo4j-user config/neo4j-password ; uri/username/password
 
     (neo4j/with-session
-
       (let [vinfo (neo4j/info-map)]
         ; example:  {:name "Neo4j Kernel" :version "4.2-aura" :edition "enterprise"}
         ; example:  {:name "Neo4j Kernel" :version "4.3.3" :edition "enterprise"}
@@ -21,7 +19,7 @@
           (is= edition "enterprise")
           (is (str/increasing-or-equal? "4.2" version))))
       (is (str/increasing-or-equal? "4.2" (neo4j/neo4j-version)))
-      (is (neo4j/apoc-installed?))
+      (is (neo4j/apoc-installed?)) ; verify APOC is present
       (is (str/increasing-or-equal? "4.2" (neo4j/apoc-version))))
 
     (neo4j/with-session
@@ -46,12 +44,12 @@
       ; use "springfield" db (always coerced to lowercase by neo4j)
       (is= (only
              (neo4j/run "use Springfield
-                                 create (p:Person $Resident) return p as Duffer"
+                          create (p:Person $Resident) return p as Duffer" ; `as Duffer` => returned map key
                {:Resident {:first-name "Homer" :last-name "Simpson"}}))
         {:Duffer {:first-name "Homer", :last-name "Simpson"}})
 
       (is= (neo4j/run "use SPRINGFIELD
-                                    match (n) return n as Dummy")
+                        match (n) return n as Dummy")
         [{:Dummy {:first-name "Homer", :last-name "Simpson"}}])
 
       (neo4j/run "drop database SpringField if exists"))
@@ -93,14 +91,13 @@
                       :indexProvider     "token-lookup-1.0"
                       :entityType        "NODE"
                       :labelsOrTypes     nil}
-        idxs-norm-ext-int [idx-normal idx-extraneous idx-internal]
+        sample-idxs [idx-normal idx-extraneous idx-internal]
         ]
-    (is= [false true true] (mapv neo4j/extraneous-index? idxs-norm-ext-int))
-    (is= [false false true] (mapv neo4j/internal-index? idxs-norm-ext-int))
-    (is= [true false false] (mapv neo4j/user-index? idxs-norm-ext-int))
+    (is= [false true true] (mapv neo4j/extraneous-index? sample-idxs))
+    (is= [false false true] (mapv neo4j/internal-index? sample-idxs))
+    (is= [true false false] (mapv neo4j/user-index? sample-idxs))
 
-    )
-  )
+    ))
 
 ;-----------------------------------------------------------------------------
 #_(dotest

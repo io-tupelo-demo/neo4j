@@ -7,11 +7,10 @@
     ))
 
 (dotest   ; -focus
-  (neo4j/with-driver  ; this is URI/username/password (not uri/db/pass!)
-    config/neo4j-uri config/neo4j-user config/neo4j-password
+  (neo4j/with-driver
+    config/neo4j-uri config/neo4j-user config/neo4j-password  ; URI/username/password
 
-    ; Using a session
-    (neo4j/with-session
+  (neo4j/with-session  ; Using a session
       (neo4j/drop-extraneous-dbs!) ; drop all but "system" and "neo4j" DB's
       (is-set= (neo4j/db-names-all) ["system" "neo4j"])
       (neo4j/run "create or replace database neo4j") ; drop/recreate default db
