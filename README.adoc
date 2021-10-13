@@ -12,6 +12,11 @@ save it.  You will need the Activation Code during the installation process.
 Since the Neo4J Desktop is free to use for development, I have not played around with the
 open source Docker version of Neo4J.
 
+== Environment
+
+The unit tests in this repo work against a locally running instance of Neo4j Desktop.  For some
+unknown reason, it doesn't work right running against a basic DB in the Neo4j Aura cloud.
+
 == Configuration after installation
 
 Note that in the Neo4j Desktop browser, there are three (3) different entities to consider:
@@ -81,19 +86,19 @@ Just type
 with result:
 
 ```pre
------------------------------------
-   Clojure 1.10.3    Java 15.0.2
------------------------------------
+  -----------------------------------
+     Clojure 1.10.3    Java 15.0.2
+  -----------------------------------
 
-lein test tst.demo.core
-Creating session...
-Getting Neo4j version info
-Getting APOC version info
-  *** APOC not installed ***
+  lein test tst.demo.core
+  Creating session...
+  Getting Neo4j version info
+  Getting APOC version info
+    *** APOC not installed ***
 
-Ran 2 tests containing 4 assertions.
-0 failures, 0 errors.
-( lein do clean, test; )  30.19s user 0.87s system 320% cpu 9.698 total
+  Ran 2 tests containing 4 assertions.
+  0 failures, 0 errors.
+  ( lein do clean, test; )  30.19s user 0.87s system 320% cpu 9.698 total
 ```
 
 The message "*** APOC not installed ***" shows that we have not installed the free APOC library of
@@ -107,24 +112,23 @@ nav pane..  Then click near the green "ACTIVE" label, which will open the "Manag
 Click on Plugins -> APOC -> Install and Restart.  After the DB has restarted, re-run the tests.
 
 ```pre
-> lct
-Java HotSpot(TM) 64-Bit Server VM warning: Options -Xverify:none and -noverify were deprecated in JDK 13 and will likely be removed in a future release.
-2021-07-15T16:34:45.646307497 INFO Driver - Direct driver instance 643411416 created for server address localhost:7687
+  > lct
+  2021-07-15T16:34:45.646307497 INFO Driver - Direct driver instance 643411416 created for server address localhost:7687
 
-lein test _bootstrap
+  lein test _bootstrap
 
------------------------------------
-   Clojure 1.10.3    Java 15.0.2
------------------------------------
+  -----------------------------------
+     Clojure 1.10.3    Java 15.0.2
+  -----------------------------------
 
-lein test tst.demo.core
-Creating session...
-Getting Neo4j version info
-Getting APOC version info
-  found APOC library
+  lein test tst.demo.core
+  Creating session...
+  Getting Neo4j version info
+  Getting APOC version info
+    found APOC library
 
-Ran 2 tests containing 6 assertions.
-( lein do clean, test; )  32.61s user 0.85s system 292% cpu 11.452 total
+  Ran 2 tests containing 6 assertions.
+  ( lein do clean, test; )  32.61s user 0.85s system 292% cpu 11.452 total
 ```
 
 Notice that this time it found the APOC library.
