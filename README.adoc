@@ -113,7 +113,8 @@ Click on Plugins -> APOC -> Install and Restart.  After the DB has restarted, re
 
 ```pre
   > lct
-  2021-07-15T16:34:45.646307497 INFO Driver - Direct driver instance 643411416 created for server address localhost:7687
+  Java HotSpot(TM) 64-Bit Server VM warning: Options -Xverify:none and -noverify were deprecated in JDK 13 and will likely be removed in a future release.
+  Warning: environ value /opt/java15 for key :java-home has been overwritten with /opt/jdk-15.0.2
 
   lein test _bootstrap
 
@@ -121,14 +122,32 @@ Click on Plugins -> APOC -> Install and Restart.  After the DB has restarted, re
      Clojure 1.10.3    Java 15.0.2
   -----------------------------------
 
-  lein test tst.demo.core
-  Creating session...
-  Getting Neo4j version info
-  Getting APOC version info
-    found APOC library
+  lein test neo4j-clj.core-test
+  2021-10-19T12:43:23.214312957 INFO Driver - Direct driver instance 533282421 created for server address localhost:7687
+  2021-10-19T12:43:23.866709008 INFO Driver - Closing driver instance 533282421
+  2021-10-19T12:43:23.871466204 INFO ConnectionPool - Closing connection pool towards localhost:7687
 
-  Ran 2 tests containing 6 assertions.
-  ( lein do clean, test; )  32.61s user 0.85s system 292% cpu 11.452 total
+  lein test tst.demo.core
+  2021-10-19T12:43:24.078630622 INFO Driver - Direct driver instance 1276416078 created for server address localhost:7687
+  2021-10-19T12:43:24.728141941 INFO Driver - Closing driver instance 1276416078
+  2021-10-19T12:43:24.728574566 INFO ConnectionPool - Closing connection pool towards localhost:7687
+
+  lein test tst.demo.indexes
+  2021-10-19T12:43:24.934835116 INFO Driver - Direct driver instance 370187245 created for server address localhost:7687
+  2021-10-19T12:43:25.664557287 WARNING ChannelErrorHandler - [0xd81779d0][localhost:7687][bolt-29] Fatal error occurred in the pipeline
+  2021-10-19T12:43:25.665049016 WARNING InboundMessageHandler - [0xd81779d0][localhost:7687][bolt-29] Message ignored because of the previous fatal error. Channel will be closed. Message:
+  b07e
+  2021-10-19T12:43:26.245530699 INFO Driver - Closing driver instance 370187245
+  2021-10-19T12:43:26.245788711 INFO ConnectionPool - Closing connection pool towards localhost:7687
+
+  lein test tst.tupelo.neo4j
+  2021-10-19T12:43:26.454280398 INFO Driver - Direct driver instance 2004943989 created for server address localhost:7687
+  2021-10-19T12:43:27.358833333 INFO Driver - Closing driver instance 2004943989
+  2021-10-19T12:43:27.359274835 INFO ConnectionPool - Closing connection pool towards localhost:7687
+
+  Ran 6 tests containing 57 assertions.
+  0 failures, 0 errors.
+  ( lein do clean, test; )  32.90s user 0.81s system 236% cpu 14.237 total
 ```
 
 Notice that this time it found the APOC library.

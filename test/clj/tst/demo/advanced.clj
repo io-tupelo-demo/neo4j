@@ -1,4 +1,4 @@
-(ns neo4j-clj.core-test
+(ns tst.demo.advanced
   (:use tupelo.core tupelo.test)
   (:require
     [tupelo.config :as config]
