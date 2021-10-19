@@ -5,6 +5,7 @@
                       [org.clojure/clojure "1.10.3"]
                       [org.neo4j.driver/neo4j-java-driver "4.1.1"]
                      ;[org.neo4j.driver/neo4j-java-driver "4.3.4"] ; #todo upgrade
+                      [io.tupelo/neo4j "21.10.13-alpha1"]
                       [prismatic/schema "1.1.12"]
                       [tupelo "21.10.06b"]
                      ]
@@ -14,7 +15,7 @@
                       ]
 
   :global-vars       {*warn-on-reflection* false}
-  :main              ^:skip-aot demo.core
+  ; :main              ^:skip-aot demo.core
 
   :source-paths      ["src/clj"]
   :java-source-paths ["src/java"]
